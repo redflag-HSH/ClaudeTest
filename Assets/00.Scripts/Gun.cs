@@ -41,6 +41,7 @@ public class Gun : MonoBehaviour
     {
         actions.Player2D.Attack.performed += OnAttackPerformed;
         actions.Player2D.Attack.canceled  += OnAttackCanceled;
+        actions.Player2D.Reload.performed += OnReloadPerformed;
         actions.Player2D.Enable();
     }
 
@@ -48,6 +49,7 @@ public class Gun : MonoBehaviour
     {
         actions.Player2D.Attack.performed -= OnAttackPerformed;
         actions.Player2D.Attack.canceled  -= OnAttackCanceled;
+        actions.Player2D.Reload.performed -= OnReloadPerformed;
         actions.Player2D.Disable();
     }
 
@@ -61,6 +63,11 @@ public class Gun : MonoBehaviour
     void OnAttackCanceled(InputAction.CallbackContext ctx)
     {
         attackHeld = false;
+    }
+
+    void OnReloadPerformed(InputAction.CallbackContext ctx)
+    {
+        TryReload();
     }
 
     void Update()

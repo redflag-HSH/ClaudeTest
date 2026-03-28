@@ -45,7 +45,7 @@ public class CameraFollow2D : MonoBehaviour
         UpdateShake();
 
         Vector3 desired = GetDesiredPosition() + (Vector3)_shakeOffset;
-        transform.position = Vector3.Slerp(transform.position, desired, smoothSpeed * Time.deltaTime);
+        transform.position = Vector3.Lerp(transform.position, desired, smoothSpeed * Time.deltaTime);
     }
 
     void UpdateShake()

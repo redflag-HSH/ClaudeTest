@@ -48,6 +48,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
     }
 
     void OnMove(InputAction.CallbackContext ctx)
