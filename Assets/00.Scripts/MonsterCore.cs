@@ -1,0 +1,221 @@
+using System.Collections;
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Collider2D))]
+public class MonsterCore : MonoBehaviour, IDamageable
+{
+    // ── State Machine ────────────────────────────────────────────────────────
+
+    public enum State { Patrol, Chase, Attack, Dead }
+    public State CurrentState { get; private set; } = State.Patrol;
+
+    // ── Stats ────────────────────────────────────────────────────────────────
+
+    [Header("Stats")]
+    public float maxHp = 30f;
+    public float CurrentHp { get; private set; }
+
+    // ── Patrol ───────────────────────────────────────────────────────────────
+
+    [Header("Patrol")]
+    public float patrolSpeed = 2f;
+    public float patrolDistance = 4f;   // half-width from spawn
+    public float edgeCheckDistance = 0.5f;
+    public LayerMask groundLayer;
+
+    private Vector2 spawnPoint;
+    private int patrolDir = 1;          // 1 = right, -1 = left
+
+    // ── Detection ────────────────────────────────────────────────────────────
+
+    [Header("Detection")]
+    public float chaseRange = 6f;
+    public float attackRange = 1.2f;
+    public float chaseSpeed = 4f;
+    public LayerMask playerLayer;
+
+    // ── Attack ───────────────────────────────────────────────────────────────
+
+    [Header("Attack")]
+    public float attackDamage = 10f;
+    public float attackCooldown = 1f;
+
+    private float nextAttackTime;
+
+    // ── References ───────────────────────────────────────────────────────────
+
+    private Rigidbody2D rb;
+    private Transform player;
+
+    // ── Unity ────────────────────────────────────────────────────────────────
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        rb.freezeRotation = true;
+        CurrentHp = maxHp;
+        spawnPoint = transform.position;
+    }
+
+    void Start()
+    {
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+            player = playerObj.transform;
+    }
+
+    void Update()
+    {
+        if (CurrentState == State.Dead) return;
+
+        UpdateState();
+        RunState();
+    }
+
+    // ── State Machine ────────────────────────────────────────────────────────
+
+    void UpdateState()
+    {
+        float distToPlayer = player != null ? Vector2.Distance(transform.position, player.position) : float.MaxValue;
+
+        if (distToPlayer <= attackRange)
+            ChangeState(State.Attack);
+        else if (distToPlayer <= chaseRange)
+            ChangeState(State.Chase);
+        else
+            ChangeState(State.Patrol);
+    }
+
+    void RunState()
+    {
+        switch (CurrentState)
+        {
+            case State.Patrol: PatrolUpdate(); break;
+            case State.Chase:  ChaseUpdate();  break;
+            case State.Attack: AttackUpdate(); break;
+        }
+    }
+
+    void ChangeState(State next)
+    {
+        if (CurrentState == next) return;
+        CurrentState = next;
+    }
+
+    // ── Patrol ───────────────────────────────────────────────────────────────
+
+    void PatrolUpdate()
+    {
+        float leftEdge  = spawnPoint.x - patrolDistance;
+        float rightEdge = spawnPoint.x + patrolDistance;
+
+        // flip at edges
+        if (transform.position.x >= rightEdge)
+            patrolDir = -1;
+        else if (transform.position.x <= leftEdge)
+            patrolDir = 1;
+
+        // stop at ledge
+        if (!GroundAhead())
+            patrolDir = -patrolDir;
+
+        Move(patrolDir, patrolSpeed);
+        FaceDirection(patrolDir);
+    }
+
+    bool GroundAhead()
+    {
+        Vector2 checkOrigin = (Vector2)transform.position + Vector2.right * patrolDir * edgeCheckDistance;
+        return Physics2D.Raycast(checkOrigin, Vector2.down, 1f, groundLayer);
+    }
+
+    // ── Chase ────────────────────────────────────────────────────────────────
+
+    void ChaseUpdate()
+    {
+        if (player == null) return;
+        int dir = player.position.x > transform.position.x ? 1 : -1;
+        Move(dir, chaseSpeed);
+        FaceDirection(dir);
+    }
+
+    // ── Attack ───────────────────────────────────────────────────────────────
+
+    void AttackUpdate()
+    {
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
+        if (Time.time < nextAttackTime) return;
+        nextAttackTime = Time.time + attackCooldown;
+
+        if (player != null && player.TryGetComponent<IDamageable>(out var target))
+            target.TakeDamage(attackDamage);
+    }
+
+    // ── Hit / IDamageable ────────────────────────────────────────────────────
+
+    public void TakeDamage(float amount)
+    {
+        if (CurrentState == State.Dead) return;
+
+        CurrentHp -= amount;
+
+        if (CurrentHp <= 0f)
+            Die();
+        else
+            StartCoroutine(HitFlash());
+    }
+
+    void Die()
+    {
+        CurrentHp = 0f;
+        ChangeState(State.Dead);
+        rb.linearVelocity = Vector2.zero;
+        // swap to death animation / vfx here
+        Destroy(gameObject, 0.5f);
+    }
+
+    IEnumerator HitFlash()
+    {
+        // optional: tint sprite red briefly
+        if (TryGetComponent<SpriteRenderer>(out var sr))
+        {
+            sr.color = Color.red;
+            yield return new WaitForSeconds(0.1f);
+            sr.color = Color.white;
+        }
+        else
+            yield break;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    void Move(int dir, float speed)
+    {
+        rb.linearVelocity = new Vector2(dir * speed, rb.linearVelocity.y);
+    }
+
+    void FaceDirection(int dir)
+    {
+        Vector3 s = transform.localScale;
+        s.x = Mathf.Abs(s.x) * dir;
+        transform.localScale = s;
+    }
+
+    // ── Gizmos ───────────────────────────────────────────────────────────────
+
+    void OnDrawGizmosSelected()
+    {
+        Vector2 origin = Application.isPlaying ? spawnPoint : (Vector2)transform.position;
+
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(origin + Vector2.left  * patrolDistance, origin + Vector2.right * patrolDistance);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, chaseRange);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+}

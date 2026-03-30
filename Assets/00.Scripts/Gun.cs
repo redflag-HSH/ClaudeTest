@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class Gun : MonoBehaviour
@@ -81,6 +82,7 @@ public class Gun : MonoBehaviour
     public void TryShoot()
     {
         if (IsReloading || IsEmpty || Time.time < nextFireTime) return;
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
         Shoot();
     }
