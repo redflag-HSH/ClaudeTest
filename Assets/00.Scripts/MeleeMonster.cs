@@ -3,7 +3,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
-public class MonsterCore : MonoBehaviour, IDamageable
+public class MeleeMonster : MonoBehaviour, IDamageable
 {
     // ── State Machine ────────────────────────────────────────────────────────
 
@@ -40,8 +40,11 @@ public class MonsterCore : MonoBehaviour, IDamageable
     [Header("Attack")]
     public float attackDamage = 10f;
     public float attackCooldown = 1f;
+    public float lungeForce = 5f;       // burst of speed toward player on swing
+    public float knockbackForce = 4f;   // impulse applied to hit targets
 
     private float nextAttackTime;
+    private bool isLunging;
 
     // ── References ───────────────────────────────────────────────────────────
 
@@ -92,7 +95,7 @@ public class MonsterCore : MonoBehaviour, IDamageable
         switch (CurrentState)
         {
             case State.Patrol: PatrolUpdate(); break;
-            case State.Chase:  ChaseUpdate();  break;
+            case State.Chase: ChaseUpdate(); break;
             case State.Attack: AttackUpdate(); break;
         }
     }
@@ -107,7 +110,7 @@ public class MonsterCore : MonoBehaviour, IDamageable
 
     void PatrolUpdate()
     {
-        float leftEdge  = spawnPoint.x - patrolDistance;
+        float leftEdge = spawnPoint.x - patrolDistance;
         float rightEdge = spawnPoint.x + patrolDistance;
 
         // flip at edges
@@ -144,13 +147,41 @@ public class MonsterCore : MonoBehaviour, IDamageable
 
     void AttackUpdate()
     {
-        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        if (!isLunging)
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
 
         if (Time.time < nextAttackTime) return;
         nextAttackTime = Time.time + attackCooldown;
 
-        if (player != null && player.TryGetComponent<IDamageable>(out var target))
-            target.TakeDamage(attackDamage);
+        StartCoroutine(MeleeSwing());
+    }
+
+    IEnumerator MeleeSwing()
+    {
+        isLunging = true;
+
+        // lunge toward player
+        int dir = player != null && player.position.x > transform.position.x ? 1 : -1;
+        FaceDirection(dir);
+        rb.linearVelocity = new Vector2(dir * lungeForce, rb.linearVelocity.y);
+
+        yield return new WaitForSeconds(0.1f);
+
+        // overlap circle hitbox in front of the monster
+        Vector2 hitOrigin = (Vector2)transform.position + Vector2.right * dir * attackRange * 0.5f;
+        Collider2D[] hits = Physics2D.OverlapCircleAll(hitOrigin, attackRange * 0.6f, playerLayer);
+
+        foreach (var col in hits)
+        {
+            if (col.TryGetComponent<IDamageable>(out var target))
+                target.TakeDamage(attackDamage);
+
+            if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
+                targetRb.AddForce(new Vector2(dir * knockbackForce, 2f), ForceMode2D.Impulse);
+        }
+
+        yield return new WaitForSeconds(0.15f);
+        isLunging = false;
     }
 
     // ── Hit / IDamageable ────────────────────────────────────────────────────
@@ -210,7 +241,7 @@ public class MonsterCore : MonoBehaviour, IDamageable
         Vector2 origin = Application.isPlaying ? spawnPoint : (Vector2)transform.position;
 
         Gizmos.color = Color.cyan;
-        Gizmos.DrawLine(origin + Vector2.left  * patrolDistance, origin + Vector2.right * patrolDistance);
+        Gizmos.DrawLine(origin + Vector2.left * patrolDistance, origin + Vector2.right * patrolDistance);
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, chaseRange);

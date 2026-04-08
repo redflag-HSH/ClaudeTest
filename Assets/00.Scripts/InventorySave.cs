@@ -59,11 +59,11 @@ public class InventorySave : MonoBehaviour
 
     private void Start()
     {
-        _inventory = PlayerMovement.Instance.GetComponent<Inventory>();
+        _inventory = PlayerControl.Instance.GetComponent<Inventory>();
 
         if (_inventory == null)
         {
-            Debug.LogError("[InventorySave] Could not find Inventory on PlayerMovement.Instance.");
+            Debug.LogError("[InventorySave] Could not find Inventory on PlayerControl.Instance.");
             return;
         }
 

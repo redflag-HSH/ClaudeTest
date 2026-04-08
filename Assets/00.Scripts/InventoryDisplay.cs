@@ -39,7 +39,7 @@ public class InventoryDisplay : MonoBehaviour
     private void Start()
     {
         if (inventory == null)
-            inventory = PlayerMovement.Instance.GetComponent<Inventory>();
+            inventory = PlayerControl.Instance.GetComponent<Inventory>();
 
         inventory.onItemAdded.AddListener(_ => RefreshDisplay());
         inventory.onItemRemoved.AddListener(_ => RefreshDisplay());

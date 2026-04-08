@@ -34,8 +34,8 @@ public class CameraFollow2D : MonoBehaviour
     {
         _cameraZ = transform.position.z;
 
-        if (target == null && PlayerMovement.Instance != null)
-            target = PlayerMovement.Instance.transform;
+        if (target == null && PlayerControl.Instance != null)
+            target = PlayerControl.Instance.transform;
     }
 
     void LateUpdate()
