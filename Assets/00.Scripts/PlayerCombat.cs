@@ -265,11 +265,12 @@ public class PlayerCombat : MonoBehaviour, IDamageable
         isAttacking = false;
 
         // direction: use move input from PlayerMovement singleton
-        float moveInput = PlayerMovement.Instance != null
-            ? PlayerMovement.Instance.GetComponent<Rigidbody2D>().linearVelocity.x
-            : 0f;
-        int dodgeDir = moveInput != 0f ? (int)Mathf.Sign(moveInput) : FacingDir();
-
+        /* float moveInput = PlayerMovement.Instance != null
+             ? PlayerMovement.Instance.GetComponent<Rigidbody2D>().linearVelocity.x
+             : 0f;
+         int dodgeDir = moveInput != 0f ? (int)Mathf.Sign(moveInput) : FacingDir();
+ */
+        int dodgeDir = FacingDir();
         // i-frames
         IsInvincible = true;
         rb.linearVelocity = new Vector2(dodgeDir * dodgeForce, rb.linearVelocity.y);

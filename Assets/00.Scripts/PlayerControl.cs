@@ -74,19 +74,23 @@ public class PlayerControl : MonoBehaviour, IDamageable
     // ── State ─────────────────────────────────────────────────────────────────
 
     public bool IsInvincible { get; private set; }
-    public bool IsGuarding   { get; private set; }
+    public bool IsGuarding { get; private set; }
 
     bool isParryActive;
     bool isAttacking;
     bool isDodging;
 
-    int   comboStep;
+    int comboStep;
     float comboTimer;
-    bool  comboInputQueued;
+    bool comboInputQueued;
 
     float staminaRegenTimer;
     float moveInput;
-    bool  jumpQueued;
+    bool jumpQueued;
+    int lastFacingDir = 1;
+
+    bool isOnSlope;
+    Vector2 slopeNormal;
 
     Rigidbody2D rb;
     SpriteRenderer sr;
@@ -102,7 +106,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         rb = GetComponent<Rigidbody2D>();
         rb.freezeRotation = true;
         sr = GetComponent<SpriteRenderer>();
-        CurrentHp      = maxHp;
+        CurrentHp = maxHp;
         CurrentStamina = maxStamina;
 
         actions = new _2DActions();
@@ -115,27 +119,27 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnEnable()
     {
-        actions.Player2D.Move.performed        += OnMove;
-        actions.Player2D.Move.canceled         += OnMove;
-        actions.Player2D.Jump.performed        += OnJump;
+        actions.Player2D.Move.performed += OnMove;
+        actions.Player2D.Move.canceled += OnMove;
+        actions.Player2D.Jump.performed += OnJump;
         actions.Player2D.LightAttack.performed += OnLightAttack;
         actions.Player2D.HeavyAttack.performed += OnHeavyAttack;
-        actions.Player2D.Dodge.performed       += OnDodge;
-        actions.Player2D.Guard.performed       += OnGuardStart;
-        actions.Player2D.Guard.canceled        += OnGuardEnd;
+        actions.Player2D.Dodge.performed += OnDodge;
+        actions.Player2D.Guard.performed += OnGuardStart;
+        actions.Player2D.Guard.canceled += OnGuardEnd;
         actions.Player2D.Enable();
     }
 
     void OnDisable()
     {
-        actions.Player2D.Move.performed        -= OnMove;
-        actions.Player2D.Move.canceled         -= OnMove;
-        actions.Player2D.Jump.performed        -= OnJump;
+        actions.Player2D.Move.performed -= OnMove;
+        actions.Player2D.Move.canceled -= OnMove;
+        actions.Player2D.Jump.performed -= OnJump;
         actions.Player2D.LightAttack.performed -= OnLightAttack;
         actions.Player2D.HeavyAttack.performed -= OnHeavyAttack;
-        actions.Player2D.Dodge.performed       -= OnDodge;
-        actions.Player2D.Guard.performed       -= OnGuardStart;
-        actions.Player2D.Guard.canceled        -= OnGuardEnd;
+        actions.Player2D.Dodge.performed -= OnDodge;
+        actions.Player2D.Guard.performed -= OnGuardStart;
+        actions.Player2D.Guard.canceled -= OnGuardEnd;
         actions.Player2D.Disable();
     }
 
@@ -148,37 +152,64 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         TickComboWindow();
         TickStaminaRegen();
+        CheckSlope();
     }
 
     void FixedUpdate()
     {
         if (isDodging) return;
 
-        rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
-
         if (jumpQueued)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            jumpQueued = false;
+            rb.gravityScale   = 1f;
+            rb.linearVelocity = new Vector2(moveInput * speed, jumpForce);
+            jumpQueued        = false;
+            return;
         }
-        else if (IsGrounded() && moveInput != 0)
+
+        if (isOnSlope && moveInput != 0)
         {
-            RaycastHit2D hit = Physics2D.Raycast(groundCheck.position, Vector2.down, 0.3f, groundLayer);
-            if (hit.collider != null)
-            {
-                Vector2 slopeRight = new(hit.normal.y, -hit.normal.x);
-                Vector2 slopeVel   = moveInput * speed * slopeRight;
-                if (slopeVel.y < 0)
-                    rb.linearVelocity = slopeVel;
-            }
+            // Move along slope direction and suppress gravity so we don't float off
+            Vector2 slopeDir  = new(slopeNormal.y, -slopeNormal.x);
+            rb.gravityScale   = 0f;
+            rb.linearVelocity = moveInput * speed * slopeDir;
+        }
+        else if (isOnSlope && moveInput == 0)
+        {
+            // Standing still on slope: kill all velocity so we don't slide or float
+            rb.gravityScale   = 0f;
+            rb.linearVelocity = Vector2.zero;
+        }
+        else
+        {
+            rb.gravityScale   = 1f;
+            rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
         }
     }
 
     // ── Input Callbacks ───────────────────────────────────────────────────────
+    void CheckSlope()
+    {
+        if (IsGrounded())
+        {
+            RaycastHit2D hit = Physics2D.Raycast(groundCheck.position, Vector2.down, 0.3f, groundLayer);
+            if (hit.collider != null)
+            {
+                float slopeAngle = Vector2.Angle(hit.normal, Vector2.up);
+                isOnSlope  = slopeAngle > 0f && slopeAngle <= 45f;
+                slopeNormal = hit.normal;
+                return;
+            }
+        }
+        isOnSlope   = false;
+        slopeNormal = Vector2.up;
+    }
 
     void OnMove(InputAction.CallbackContext ctx)
     {
         moveInput = ctx.ReadValue<Vector2>().x;
+        if (moveInput != 0f)
+            lastFacingDir = (int)Mathf.Sign(moveInput);
     }
 
     void OnJump(InputAction.CallbackContext ctx)
@@ -226,7 +257,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnGuardEnd(InputAction.CallbackContext ctx)
     {
-        IsGuarding    = false;
+        IsGuarding = false;
         isParryActive = false;
     }
 
@@ -234,14 +265,14 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     IEnumerator LightAttackCoroutine()
     {
-        isAttacking      = true;
+        isAttacking = true;
         comboInputQueued = false;
 
         yield return new WaitForSeconds(0.08f);
 
-        int    facingDir  = FacingDir();
+        int facingDir = FacingDir();
         Vector2 hitOrigin = HitOrigin(lightRange);
-        float  multiplier = 1f + comboStep * 0.2f;
+        float multiplier = 1f + comboStep * 0.2f;
 
         HitEnemies(hitOrigin, lightRange * 0.6f, lightDamage * multiplier, lightKnockback, facingDir);
 
@@ -252,7 +283,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         if (comboInputQueued && comboStep < maxComboSteps - 1)
         {
             comboStep++;
-            comboTimer       = comboWindowDuration;
+            comboTimer = comboWindowDuration;
             comboInputQueued = false;
 
             if (SpendStamina(lightStaminaCost))
@@ -260,8 +291,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
         else
         {
-            comboStep        = 0;
-            comboTimer       = 0f;
+            comboStep = 0;
+            comboTimer = 0f;
             comboInputQueued = false;
         }
     }
@@ -273,7 +304,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         comboTimer -= Time.deltaTime;
         if (comboTimer <= 0f)
         {
-            comboStep        = 0;
+            comboStep = 0;
             comboInputQueued = false;
         }
     }
@@ -292,19 +323,19 @@ public class PlayerControl : MonoBehaviour, IDamageable
         yield return new WaitForSeconds(0.2f);
 
         isAttacking = false;
-        comboStep   = 0;
+        comboStep = 0;
     }
 
     // ── Dodge ─────────────────────────────────────────────────────────────────
 
     IEnumerator DodgeCoroutine()
     {
-        isDodging   = true;
+        isDodging = true;
         isAttacking = false;
 
-        int dodgeDir = moveInput != 0f ? (int)Mathf.Sign(moveInput) : FacingDir();
+        int dodgeDir = moveInput != 0f ? (int)Mathf.Sign(moveInput) : lastFacingDir;
 
-        IsInvincible      = true;
+        IsInvincible = true;
         rb.linearVelocity = new Vector2(dodgeDir * dodgeForce, rb.linearVelocity.y);
 
         yield return new WaitForSeconds(iFrameDuration);
@@ -361,8 +392,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
     bool SpendStamina(float cost)
     {
         if (CurrentStamina < cost) return false;
-        CurrentStamina    -= cost;
-        staminaRegenTimer  = staminaRegenDelay;
+        CurrentStamina -= cost;
+        staminaRegenTimer = staminaRegenDelay;
         return true;
     }
 
@@ -399,10 +430,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
             : (Vector2)transform.position + Vector2.right * FacingDir() * range * 0.5f;
     }
 
-    int FacingDir()
-    {
-        return transform.localScale.x >= 0f ? 1 : -1;
-    }
+    int FacingDir() => lastFacingDir;
 
     bool IsGrounded()
     {
