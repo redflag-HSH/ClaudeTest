@@ -430,6 +430,19 @@ public class PlayerControl : MonoBehaviour, IDamageable
             : (Vector2)transform.position + Vector2.right * FacingDir() * range * 0.5f;
     }
 
+    public void SetInputEnabled(bool enabled)
+    {
+        if (enabled)
+            actions.Player2D.Enable();
+        else
+        {
+            actions.Player2D.Disable();
+            moveInput  = 0f;
+            jumpQueued = false;
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        }
+    }
+
     int FacingDir() => lastFacingDir;
 
     bool IsGrounded()

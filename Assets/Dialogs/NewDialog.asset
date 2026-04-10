@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e97498c6375d264d882cc4abe54bebe, type: 3}
+  m_Name: NewDialog
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: ninbanyang
+    namePlateColor: {r: 0.18, g: 0.44, b: 0.8, a: 1}
+    portrait: {fileID: -6135102697619162355, guid: 23e7d01f05ce44e4b8daaafa7e6c9e84, type: 3}
+    side: 0
+    text: I'm <ruby=baekho>ninbanyang</ruby>. and this is my friend
+  - speakerName: Dread
+    namePlateColor: {r: 0.18, g: 0.44, b: 0.8, a: 1}
+    portrait: {fileID: -8255599504450383756, guid: 4cc9c12d92173cb44a4261e0bfa2b10b, type: 3}
+    side: 1
+    text: yaho!
