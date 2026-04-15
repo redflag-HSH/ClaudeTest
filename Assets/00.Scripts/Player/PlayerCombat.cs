@@ -22,6 +22,7 @@ public class PlayerCombat : MonoBehaviour, IDamageable
     [Header("Health")]
     public float maxHp = 100f;
     public float CurrentHp { get; private set; }
+    public bool IsDead { get; set; }
 
     [Header("Stamina")]
     public float maxStamina = 100f;

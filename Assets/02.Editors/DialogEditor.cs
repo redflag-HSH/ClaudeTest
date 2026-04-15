@@ -15,11 +15,11 @@ public class DialogEditor : EditorWindow
 
     class LineData
     {
-        public string      speakerName    = "";
-        public Color       namePlateColor = new Color(0.18f, 0.44f, 0.80f, 1f);
-        public Sprite      portrait       = null;
-        public DialogSide  side           = DialogSide.Left;
-        public string      text           = "";
+        public string speakerName = "";
+        public Color namePlateColor = new Color(0.18f, 0.44f, 0.80f, 1f);
+        public Sprite portrait = null;
+        public DialogSide side = DialogSide.Left;
+        public string text = "";
     }
 
     List<LineData> lines = new() { new LineData() };
@@ -109,9 +109,9 @@ public class DialogEditor : EditorWindow
             var prev = lines[lines.Count - 1];
             lines.Add(new LineData
             {
-                speakerName    = prev.speakerName,
+                speakerName = prev.speakerName,
                 namePlateColor = prev.namePlateColor,
-                side           = prev.side
+                side = prev.side
             });
         }
     }
@@ -139,7 +139,7 @@ public class DialogEditor : EditorWindow
             return;
         }
 
-        string folder = "Assets/Dialogs";
+        string folder = "Assets/05.Dialogs";
         if (!AssetDatabase.IsValidFolder(folder))
             AssetDatabase.CreateFolder("Assets", "Dialogs");
 
@@ -161,11 +161,11 @@ public class DialogEditor : EditorWindow
         {
             asset.lines[i] = new DialogLine
             {
-                speakerName    = lines[i].speakerName,
+                speakerName = lines[i].speakerName,
                 namePlateColor = lines[i].namePlateColor,
-                portrait       = lines[i].portrait,
-                side           = lines[i].side,
-                text           = lines[i].text
+                portrait = lines[i].portrait,
+                side = lines[i].side,
+                text = lines[i].text
             };
         }
 
@@ -181,6 +181,6 @@ public class DialogEditor : EditorWindow
     void ResetForm()
     {
         fileName = "NewDialog";
-        lines    = new List<LineData> { new LineData() };
+        lines = new List<LineData> { new LineData() };
     }
 }

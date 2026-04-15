@@ -3,7 +3,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
-public class MeleeMonster : MonoBehaviour, IDamageable
+public class MeleeMonster : EnemySliceable, IDamageable
 {
     // ── State Machine ────────────────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ public class MeleeMonster : MonoBehaviour, IDamageable
     [Header("Stats")]
     public float maxHp = 30f;
     public float CurrentHp { get; private set; }
+    public bool IsDead { get; set; }
 
     // ── Patrol ───────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ public class MeleeMonster : MonoBehaviour, IDamageable
 
     void Awake()
     {
+        base.Awake();
         rb = GetComponent<Rigidbody2D>();
         rb.freezeRotation = true;
         CurrentHp = maxHp;
@@ -201,23 +203,20 @@ public class MeleeMonster : MonoBehaviour, IDamageable
     void Die()
     {
         CurrentHp = 0f;
+        IsDead = true;
         ChangeState(State.Dead);
         rb.linearVelocity = Vector2.zero;
-        // swap to death animation / vfx here
-        Destroy(gameObject, 0.5f);
+        // destruction is handled by EnemySliceable.Slice() when the player slices
     }
+
+    static readonly WaitForSeconds HitFlashWait = new(0.1f);
 
     IEnumerator HitFlash()
     {
-        // optional: tint sprite red briefly
-        if (TryGetComponent<SpriteRenderer>(out var sr))
-        {
-            sr.color = Color.red;
-            yield return new WaitForSeconds(0.1f);
-            sr.color = Color.white;
-        }
-        else
-            yield break;
+        if (sr == null) yield break;
+        sr.color = Color.red;
+        yield return HitFlashWait;
+        sr.color = Color.white;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
