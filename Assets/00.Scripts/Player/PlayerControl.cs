@@ -37,6 +37,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float lightStaminaCost = 20f;
     public float lightRange = 1.0f;
     public float lightKnockback = 3f;
+    public float lightSliceForcePower = 4f;
     public float comboWindowDuration = 0.5f;
     public int maxComboSteps = 3;
 
@@ -48,6 +49,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float heavyRange = 1.3f;
     public float heavyKnockback = 7f;
     public float heavyStartupDuration = 0.25f;
+    public float heavySliceForcePower = 9f;
 
     // ���� Dodge ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -71,6 +73,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float sliceDamage = 999f;
     public float sliceCooldown = 0.6f;
     public float sliceStaminaCost = 30f;
+    public float sliceForcePower = 6f;
 
     [Header("Slash Visual")]
     public Color slashColor = new Color(1f, 1f, 0.3f, 0.85f);
@@ -112,6 +115,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     Rigidbody2D rb;
     SpriteRenderer sr;
     _2DActions actions;
+    EffectGenerator effects;
 
     // ���� Unity ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -128,6 +132,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         actions = new _2DActions();
         slashLine = BuildSlashLine();
+        effects = GetComponent<EffectGenerator>();
     }
 
     void OnDestroy()
@@ -280,18 +285,18 @@ public class PlayerControl : MonoBehaviour, IDamageable
     }
 
     // Call this from code or bind to an input action to trigger a standalone slice.
-    public void OnSlice()
+    void OnSlice()
     {
         if (isDodging || IsGuarding || Time.time < nextSliceTime) return;
         if (!SpendStamina(sliceStaminaCost)) return;
 
         nextSliceTime = Time.time + sliceCooldown;
-        DoSlice();
+        DoSlice(sliceForcePower);
     }
 
     //���� Slice ����������������������������������������������������������������������������������������������������������������������������������
 
-    void DoSlice()
+    void DoSlice(float forcePower = 0f)
     {
         Vector2 origin = (Vector2)transform.position + Vector2.up * 0.3f;
 
@@ -310,16 +315,16 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         foreach (var hit in hits)
         {
+            SpawnBlood(hit.point, hit.normal);
+
             if (hit.collider.TryGetComponent<EnemySliceable>(out var sliceable))
             {
                 if (hit.collider.TryGetComponent<IDamageable>(out var d))
                     d.TakeDamage(sliceDamage);
 
-                // Only slice visually if the enemy just died
-                // (no MeleeMonster = part limb with no own HP, always allow)
                 bool isDead = !hit.collider.TryGetComponent<IDamageable>(out var m) || m.IsDead;
                 if (isDead)
-                    sliceable.Slice(sliceNormal, hit.point);
+                    sliceable.Slice(sliceNormal, hit.point, forcePower, transform.position);
             }
             else if (hit.collider.TryGetComponent<IDamageable>(out var damageable))
                 damageable.TakeDamage(sliceDamage);
@@ -368,7 +373,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         float multiplier = 1f + comboStep * 0.2f;
 
         HitEnemies(hitOrigin, lightRange * 0.6f, lightDamage * multiplier, lightKnockback, facingDir);
-        DoSlice();
+        DoSlice(lightSliceForcePower);
 
         yield return new WaitForSeconds(0.12f);
 
@@ -413,7 +418,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         yield return new WaitForSeconds(heavyStartupDuration);
 
         HitEnemies(HitOrigin(heavyRange), heavyRange, heavyDamage, heavyKnockback, FacingDir());
-        DoSlice();
+        DoSlice(heavySliceForcePower);
 
         yield return new WaitForSeconds(0.2f);
 
@@ -516,8 +521,15 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
                 targetRb.AddForce(new Vector2(dir * knockback, 2f), ForceMode2D.Impulse);
+
+            // Spawn blood at the closest surface point facing the attacker
+            Vector2 contactPt = col.ClosestPoint(origin);
+            Vector2 normal     = (contactPt - (Vector2)col.bounds.center).normalized;
+            SpawnBlood(contactPt, normal);
         }
     }
+
+    void SpawnBlood(Vector2 point, Vector2 normal) => effects?.SpawnBlood(point, normal);
 
 
     Vector2 HitOrigin(float range)

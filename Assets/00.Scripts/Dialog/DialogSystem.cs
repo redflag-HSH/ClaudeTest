@@ -134,6 +134,7 @@ public class DialogSystem : MonoBehaviour
     {
         if (typewriterRoutine != null) StopCoroutine(typewriterRoutine);
         bodyText.text = current.lines[lineIndex].text;
+        bodyText.maxVisibleCharacters = int.MaxValue;
         isTyping = false;
     }
 
@@ -142,12 +143,16 @@ public class DialogSystem : MonoBehaviour
     IEnumerator Typewriter(string line)
     {
         isTyping = true;
-        bodyText.text = string.Empty;
+        bodyText.text = line;
+        bodyText.maxVisibleCharacters = 0;
+        bodyText.ForceMeshUpdate();
 
+        int total = bodyText.textInfo.characterCount;
         float delay = 1f / charsPerSecond;
-        foreach (char c in line)
+
+        for (int i = 0; i <= total; i++)
         {
-            bodyText.text += c;
+            bodyText.maxVisibleCharacters = i;
             yield return new WaitForSeconds(delay);
         }
 

@@ -17,14 +17,24 @@ public class EnemySliceable : MonoBehaviour
     // ── Slice Settings ────────────────────────────────────────────────────────
 
     [Header("Slice Settings")]
-    public float halfSeparationForce = 4f;   // impulse pushing halves apart
-    public float halfSpin = 200f;            // degrees/sec rotation applied to pieces
-    public float halfLifetime = 1.2f;        // seconds before pieces disappear
-    public float halfGravityScale = 2f;      // how fast pieces fall
+    public float halfSeparationForce = 4f;
+    public float halfSpin = 200f;
+    public float halfLifetime = 1.2f;
+    public float halfGravityScale = 2f;
+
+    [Header("Physics")]
+    public float halfBounciness = 0.3f;
+    public float halfFriction   = 0.2f;
+
+    [Header("Optimization")]
+    [Tooltip("Max sliced halves alive at once across the whole scene. Oldest are removed first.")]
+    public int maxActiveHalves = 22;
 
     [Header("Respawn")]
     [Tooltip("If false the GameObject is disabled instead of destroyed after slicing (used by Dummy).")]
     public bool destroyOnSlice = true;
+
+    private string layerName = "SlicePieces";  // set this to the name of your slice piece sorting layer
 
     // Called after the visual halves are spawned. Subscribe in Awake when
     // destroyOnSlice = false so you can handle respawn logic yourself.
@@ -38,8 +48,18 @@ public class EnemySliceable : MonoBehaviour
 
     bool _sliced;
     protected SpriteRenderer sr;
+    PhysicsMaterial2D _halfPhysMat;
 
-    protected void Awake() => sr = GetComponent<SpriteRenderer>();
+    protected void Awake()
+    {
+        sr = GetComponent<SpriteRenderer>();
+        _halfPhysMat = new PhysicsMaterial2D("SlicedHalfMat")
+        {
+            bounciness = halfBounciness,
+            friction = halfFriction
+        };
+        SlicedHalf.MaxActive = maxActiveHalves;
+    }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -51,7 +71,7 @@ public class EnemySliceable : MonoBehaviour
     /// World-space normal of the cut plane (e.g. Vector2.up = horizontal cut,
     /// Vector2.right = vertical cut, any normalized diagonal for angled cuts).
     /// </param>
-    public void Slice(Vector2 sliceNormal, Vector2? contactPoint = null)
+    public void Slice(Vector2 sliceNormal, Vector2? contactPoint = null, float sliceForcePower = 0f, Vector2 playerPos = default)
     {
         if (sr == null || _sliced) return;
         _sliced = true;
@@ -68,8 +88,8 @@ public class EnemySliceable : MonoBehaviour
         // Fall back to the enemy's own centre when no contact point is supplied
         Vector2 cp = contactPoint ?? (Vector2)transform.position;
 
-        SpawnHalf(maskSprite, sliceNormal, +1, cp);
-        SpawnHalf(maskSprite, sliceNormal, -1, cp);
+        SpawnHalf(maskSprite, sliceNormal, +1, cp, sliceForcePower, playerPos);
+        SpawnHalf(maskSprite, sliceNormal, -1, cp, sliceForcePower, playerPos);
 
         HitStop.Instance.DoHitStop(0.08f);  // brief freeze for impact feel
 
@@ -100,9 +120,60 @@ public class EnemySliceable : MonoBehaviour
         if (col != null) col.enabled = true;
     }
 
+    // ── Whole Creation ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Spawns the full sprite as a single physics prop that arcs, spins, and fades —
+    /// mirrors SpawnHalf but skips the mask/cut entirely.
+    /// </summary>
+    /// <param name="launchVelocity">
+    /// World-space velocity applied to the prop. Defaults to a centred upward arc.
+    /// </param>
+    public void SpawnWhole(Vector2? launchVelocity = null)
+    {
+        if (sr == null) return;
+
+        Bounds bounds = sr.bounds;
+        int order = _nextSliceOrder++;
+
+        // ── Root — mirrors SpawnHalf root setup ───────────────────────────────
+        var root = new GameObject("SpawnedWhole");
+        root.transform.position = transform.position;
+        root.transform.rotation = transform.rotation;
+        root.gameObject.layer   = LayerMask.NameToLayer(layerName);
+
+        var sg = root.AddComponent<UnityEngine.Rendering.SortingGroup>();
+        sg.sortingLayerID = sr.sortingLayerID;
+        sg.sortingOrder   = order;
+
+        var rb = root.AddComponent<Rigidbody2D>();
+        rb.gravityScale    = halfGravityScale;
+        rb.freezeRotation  = false;
+        rb.angularVelocity = halfSpin * (Random.value > 0.5f ? 1 : -1);
+        rb.linearVelocity  = launchVelocity ?? new Vector2(0f, halfSeparationForce);
+
+        var col = root.AddComponent<BoxCollider2D>();
+        col.size            = bounds.size;
+        col.sharedMaterial  = _halfPhysMat;
+
+        // ── Sprite child — no mask needed, full sprite visible ────────────────
+        var spriteObj = new GameObject("Sprite");
+        spriteObj.transform.SetParent(root.transform, false);
+        spriteObj.transform.localScale = transform.localScale;
+
+        var wholeSr = spriteObj.AddComponent<SpriteRenderer>();
+        wholeSr.sprite = sr.sprite;
+        wholeSr.color  = sr.color;
+        wholeSr.flipX  = sr.flipX;
+        wholeSr.flipY  = sr.flipY;
+
+        // ── Fade & self-destruct — same as SpawnHalf ──────────────────────────
+        root.AddComponent<SlicedHalf>().Init(wholeSr, halfLifetime);
+    }
+
     // ── Half Creation ─────────────────────────────────────────────────────────
 
-    void SpawnHalf(Sprite maskSprite, Vector2 sliceNormal, int side, Vector2 contactPoint)
+    void SpawnHalf(Sprite maskSprite, Vector2 sliceNormal, int side, Vector2 contactPoint, float sliceForcePower = 0f, Vector2 playerPos = default)
     {
         Bounds bounds = sr.bounds;                          // world-space bounds
         float diag = bounds.extents.magnitude * 4f + 1f;   // safely larger than sprite
@@ -113,6 +184,8 @@ public class EnemySliceable : MonoBehaviour
         var root = new GameObject($"SlicedHalf_{(side > 0 ? "A" : "B")}");
         root.transform.position = transform.position;
         root.transform.rotation = transform.rotation;
+
+        root.gameObject.layer = LayerMask.NameToLayer(layerName);
 
         // SortingGroup guarantees the SpriteMask below only affects the
         // SpriteRenderer below — no custom range needed, no cross-bleed possible.
@@ -125,9 +198,22 @@ public class EnemySliceable : MonoBehaviour
         rb.freezeRotation = false;
         rb.angularVelocity = halfSpin * side;
 
-        // Push halves apart along sliceNormal
+        // Physical collider — sized to the original sprite bounds so the half
+        // lands and bounces on geometry instead of passing through it.
+        var col = root.AddComponent<BoxCollider2D>();
+        col.size = bounds.size;
+        col.sharedMaterial = _halfPhysMat;
+
         Vector2 separateVel = sliceNormal * side * halfSeparationForce;
-        separateVel.y += 1.5f;   // slight upward kick so both halves visibly arc
+        separateVel.y += 1.5f;
+
+        if (sliceForcePower > 0f)
+        {
+            Vector2 awayDir = (Vector2)transform.position - playerPos;
+            if (awayDir.sqrMagnitude > 0.001f) awayDir.Normalize();
+            separateVel += awayDir * sliceForcePower;
+        }
+
         rb.linearVelocity = separateVel;
 
         // ── Sprite child (shows only the half inside the mask) ────────────────

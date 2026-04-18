@@ -13,18 +13,24 @@ public class PartSliceEnemy : MonoBehaviour, IDamageable
         cuttedLimbs = new List<Limb>();
         foreach (PartSliceable limb in sliceableLimbs)
         {
-            limb.onSliced += () => { Cutted(limb.limbPart); };
+            limb.onSliced += () => { Cutted(limb); };
         }
     }
-    public void Cutted(Limb limbPart)
+    public void Cutted(PartSliceable limbPart)
     {
-        print("Cutted " + limbPart);
-        if (limbPart == Limb.Head || limbPart == Limb.Body)
+        sliceableLimbs.Remove(limbPart);
+        print("Cutted " + limbPart.limbPart);
+        if (limbPart.limbPart == Limb.Head || limbPart.limbPart == Limb.Body)
         {
+            foreach (PartSliceable limb in sliceableLimbs)
+            {
+                if (limb != limbPart)
+                    limb.SpawnWhole();
+            }
             this.gameObject.SetActive(false);
         }
         else
-            cuttedLimbs.Add(limbPart);
+            cuttedLimbs.Add(limbPart.limbPart);
     }
     public void TakeDamage(float damage)
     {
