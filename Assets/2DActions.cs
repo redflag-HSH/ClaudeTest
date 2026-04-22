@@ -114,16 +114,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""name"": ""LightAttack"",
                     ""type"": ""Button"",
                     ""id"": ""11111111-1111-1111-1111-111111111103"",
-                    ""expectedControlType"": ""Button"",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""HeavyAttack"",
-                    ""type"": ""Button"",
-                    ""id"": ""11111111-1111-1111-1111-111111111107"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -132,7 +123,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""name"": ""Dodge"",
                     ""type"": ""Button"",
                     ""id"": ""11111111-1111-1111-1111-111111111104"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -156,9 +147,54 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Reload"",
+                    ""name"": ""Gather"",
                     ""type"": ""Button"",
-                    ""id"": ""11111111-1111-1111-1111-111111111106"",
+                    ""id"": ""71831297-fea9-4227-9096-e25c506ed6ee"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Skill"",
+                    ""type"": ""Button"",
+                    ""id"": ""11111111-1111-1111-1111-111111111109"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SkillChange"",
+                    ""type"": ""Button"",
+                    ""id"": ""11111111-1111-1111-1111-111111111110"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Parry"",
+                    ""type"": ""Button"",
+                    ""id"": ""11111111-1111-1111-1111-111111111111"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Map"",
+                    ""type"": ""Button"",
+                    ""id"": ""11111111-1111-1111-1111-111111111112"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Escape"",
+                    ""type"": ""Button"",
+                    ""id"": ""4584e348-a280-4cfe-ad12-221820d774a1"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -278,28 +314,6 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""22222222-2222-2222-2222-222222222211"",
-                    ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": "";Keyboard&Mouse"",
-                    ""action"": ""HeavyAttack"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""22222222-2222-2222-2222-222222222212"",
-                    ""path"": ""<Gamepad>/buttonNorth"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": "";Gamepad"",
-                    ""action"": ""HeavyAttack"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""22222222-2222-2222-2222-22222222220b"",
                     ""path"": ""<Keyboard>/leftShift"",
                     ""interactions"": """",
@@ -323,7 +337,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""22222222-2222-2222-2222-222222222213"",
-                    ""path"": ""<Keyboard>/q"",
+                    ""path"": ""<Mouse>/rightButton"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
@@ -345,7 +359,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""22222222-2222-2222-2222-22222222220d"",
-                    ""path"": ""<Keyboard>/e"",
+                    ""path"": ""<Keyboard>/f"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
@@ -366,23 +380,78 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""22222222-2222-2222-2222-22222222220f"",
-                    ""path"": ""<Keyboard>/r"",
+                    ""id"": ""37eae116-9c36-4441-aa70-b731d2e84fcc"",
+                    ""path"": ""<Keyboard>/q"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
-                    ""action"": ""Reload"",
+                    ""action"": ""Gather"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
                 {
                     ""name"": """",
-                    ""id"": ""22222222-2222-2222-2222-222222222210"",
-                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""id"": ""22222222-2222-2222-2222-222222222215"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Skill"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""22222222-2222-2222-2222-222222222216"",
+                    ""path"": ""<Keyboard>/r"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""SkillChange"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""22222222-2222-2222-2222-222222222217"",
+                    ""path"": ""<Keyboard>/leftCtrl"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Parry"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""22222222-2222-2222-2222-222222222218"",
+                    ""path"": ""<Keyboard>/m"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Map"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9098e04b-d24d-447a-be15-7ff62067dda7"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Escape"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""07113261-834e-4aab-b087-a75013e8c86f"",
+                    ""path"": ""<Gamepad>/start"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Gamepad"",
-                    ""action"": ""Reload"",
+                    ""action"": ""Escape"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -463,11 +532,15 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         m_Player2D_Move = m_Player2D.FindAction("Move", throwIfNotFound: true);
         m_Player2D_Jump = m_Player2D.FindAction("Jump", throwIfNotFound: true);
         m_Player2D_LightAttack = m_Player2D.FindAction("LightAttack", throwIfNotFound: true);
-        m_Player2D_HeavyAttack = m_Player2D.FindAction("HeavyAttack", throwIfNotFound: true);
         m_Player2D_Dodge = m_Player2D.FindAction("Dodge", throwIfNotFound: true);
         m_Player2D_Guard = m_Player2D.FindAction("Guard", throwIfNotFound: true);
         m_Player2D_Interact = m_Player2D.FindAction("Interact", throwIfNotFound: true);
-        m_Player2D_Reload = m_Player2D.FindAction("Reload", throwIfNotFound: true);
+        m_Player2D_Gather = m_Player2D.FindAction("Gather", throwIfNotFound: true);
+        m_Player2D_Skill = m_Player2D.FindAction("Skill", throwIfNotFound: true);
+        m_Player2D_SkillChange = m_Player2D.FindAction("SkillChange", throwIfNotFound: true);
+        m_Player2D_Parry = m_Player2D.FindAction("Parry", throwIfNotFound: true);
+        m_Player2D_Map = m_Player2D.FindAction("Map", throwIfNotFound: true);
+        m_Player2D_Escape = m_Player2D.FindAction("Escape", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Pause = m_UI.FindAction("Pause", throwIfNotFound: true);
@@ -555,11 +628,15 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player2D_Move;
     private readonly InputAction m_Player2D_Jump;
     private readonly InputAction m_Player2D_LightAttack;
-    private readonly InputAction m_Player2D_HeavyAttack;
     private readonly InputAction m_Player2D_Dodge;
     private readonly InputAction m_Player2D_Guard;
     private readonly InputAction m_Player2D_Interact;
-    private readonly InputAction m_Player2D_Reload;
+    private readonly InputAction m_Player2D_Gather;
+    private readonly InputAction m_Player2D_Skill;
+    private readonly InputAction m_Player2D_SkillChange;
+    private readonly InputAction m_Player2D_Parry;
+    private readonly InputAction m_Player2D_Map;
+    private readonly InputAction m_Player2D_Escape;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player2D".
     /// </summary>
@@ -584,10 +661,6 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @LightAttack => m_Wrapper.m_Player2D_LightAttack;
         /// <summary>
-        /// Provides access to the underlying input action "Player2D/HeavyAttack".
-        /// </summary>
-        public InputAction @HeavyAttack => m_Wrapper.m_Player2D_HeavyAttack;
-        /// <summary>
         /// Provides access to the underlying input action "Player2D/Dodge".
         /// </summary>
         public InputAction @Dodge => m_Wrapper.m_Player2D_Dodge;
@@ -600,9 +673,29 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Interact => m_Wrapper.m_Player2D_Interact;
         /// <summary>
-        /// Provides access to the underlying input action "Player2D/Reload".
+        /// Provides access to the underlying input action "Player2D/Gather".
         /// </summary>
-        public InputAction @Reload => m_Wrapper.m_Player2D_Reload;
+        public InputAction @Gather => m_Wrapper.m_Player2D_Gather;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2D/Skill".
+        /// </summary>
+        public InputAction @Skill => m_Wrapper.m_Player2D_Skill;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2D/SkillChange".
+        /// </summary>
+        public InputAction @SkillChange => m_Wrapper.m_Player2D_SkillChange;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2D/Parry".
+        /// </summary>
+        public InputAction @Parry => m_Wrapper.m_Player2D_Parry;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2D/Map".
+        /// </summary>
+        public InputAction @Map => m_Wrapper.m_Player2D_Map;
+        /// <summary>
+        /// Provides access to the underlying input action "Player2D/Escape".
+        /// </summary>
+        public InputAction @Escape => m_Wrapper.m_Player2D_Escape;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -638,9 +731,6 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
             @LightAttack.started += instance.OnLightAttack;
             @LightAttack.performed += instance.OnLightAttack;
             @LightAttack.canceled += instance.OnLightAttack;
-            @HeavyAttack.started += instance.OnHeavyAttack;
-            @HeavyAttack.performed += instance.OnHeavyAttack;
-            @HeavyAttack.canceled += instance.OnHeavyAttack;
             @Dodge.started += instance.OnDodge;
             @Dodge.performed += instance.OnDodge;
             @Dodge.canceled += instance.OnDodge;
@@ -650,9 +740,24 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
             @Interact.started += instance.OnInteract;
             @Interact.performed += instance.OnInteract;
             @Interact.canceled += instance.OnInteract;
-            @Reload.started += instance.OnReload;
-            @Reload.performed += instance.OnReload;
-            @Reload.canceled += instance.OnReload;
+            @Gather.started += instance.OnGather;
+            @Gather.performed += instance.OnGather;
+            @Gather.canceled += instance.OnGather;
+            @Skill.started += instance.OnSkill;
+            @Skill.performed += instance.OnSkill;
+            @Skill.canceled += instance.OnSkill;
+            @SkillChange.started += instance.OnSkillChange;
+            @SkillChange.performed += instance.OnSkillChange;
+            @SkillChange.canceled += instance.OnSkillChange;
+            @Parry.started += instance.OnParry;
+            @Parry.performed += instance.OnParry;
+            @Parry.canceled += instance.OnParry;
+            @Map.started += instance.OnMap;
+            @Map.performed += instance.OnMap;
+            @Map.canceled += instance.OnMap;
+            @Escape.started += instance.OnEscape;
+            @Escape.performed += instance.OnEscape;
+            @Escape.canceled += instance.OnEscape;
         }
 
         /// <summary>
@@ -673,9 +778,6 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
             @LightAttack.started -= instance.OnLightAttack;
             @LightAttack.performed -= instance.OnLightAttack;
             @LightAttack.canceled -= instance.OnLightAttack;
-            @HeavyAttack.started -= instance.OnHeavyAttack;
-            @HeavyAttack.performed -= instance.OnHeavyAttack;
-            @HeavyAttack.canceled -= instance.OnHeavyAttack;
             @Dodge.started -= instance.OnDodge;
             @Dodge.performed -= instance.OnDodge;
             @Dodge.canceled -= instance.OnDodge;
@@ -685,9 +787,24 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
             @Interact.started -= instance.OnInteract;
             @Interact.performed -= instance.OnInteract;
             @Interact.canceled -= instance.OnInteract;
-            @Reload.started -= instance.OnReload;
-            @Reload.performed -= instance.OnReload;
-            @Reload.canceled -= instance.OnReload;
+            @Gather.started -= instance.OnGather;
+            @Gather.performed -= instance.OnGather;
+            @Gather.canceled -= instance.OnGather;
+            @Skill.started -= instance.OnSkill;
+            @Skill.performed -= instance.OnSkill;
+            @Skill.canceled -= instance.OnSkill;
+            @SkillChange.started -= instance.OnSkillChange;
+            @SkillChange.performed -= instance.OnSkillChange;
+            @SkillChange.canceled -= instance.OnSkillChange;
+            @Parry.started -= instance.OnParry;
+            @Parry.performed -= instance.OnParry;
+            @Parry.canceled -= instance.OnParry;
+            @Map.started -= instance.OnMap;
+            @Map.performed -= instance.OnMap;
+            @Map.canceled -= instance.OnMap;
+            @Escape.started -= instance.OnEscape;
+            @Escape.performed -= instance.OnEscape;
+            @Escape.canceled -= instance.OnEscape;
         }
 
         /// <summary>
@@ -872,13 +989,6 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnLightAttack(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "HeavyAttack" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnHeavyAttack(InputAction.CallbackContext context);
-        /// <summary>
         /// Method invoked when associated input action "Dodge" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
@@ -900,12 +1010,47 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnInteract(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Reload" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "Gather" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnReload(InputAction.CallbackContext context);
+        void OnGather(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Skill" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSkill(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SkillChange" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSkillChange(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Parry" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnParry(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Map" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMap(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Escape" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEscape(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

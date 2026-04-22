@@ -108,7 +108,7 @@ public class PlayerCombat : MonoBehaviour, IDamageable
     void OnEnable()
     {
         actions.Player2D.LightAttack.performed += OnLightAttack;
-        actions.Player2D.HeavyAttack.performed += OnHeavyAttack;
+        //actions.Player2D.HeavyAttack.performed += OnHeavyAttack;
         actions.Player2D.Dodge.performed += OnDodge;
         actions.Player2D.Guard.performed += OnGuardStart;
         actions.Player2D.Guard.canceled += OnGuardEnd;
@@ -118,7 +118,7 @@ public class PlayerCombat : MonoBehaviour, IDamageable
     void OnDisable()
     {
         actions.Player2D.LightAttack.performed -= OnLightAttack;
-        actions.Player2D.HeavyAttack.performed -= OnHeavyAttack;
+        //actions.Player2D.HeavyAttack.performed -= OnHeavyAttack;
         actions.Player2D.Dodge.performed -= OnDodge;
         actions.Player2D.Guard.performed -= OnGuardStart;
         actions.Player2D.Guard.canceled -= OnGuardEnd;

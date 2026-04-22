@@ -3,6 +3,16 @@ using UnityEngine;
 public enum DialogSide { Left, Right }
 
 [System.Serializable]
+public class DialogChoice
+{
+    [Tooltip("Button label shown to the player.")]
+    public string text;
+
+    [Tooltip("Dialog to open when this choice is picked. Leave empty to close the dialog.")]
+    public Dialog nextDialog;
+}
+
+[System.Serializable]
 public class DialogLine
 {
     [Tooltip("Character name shown in the name plate.")]
@@ -19,6 +29,9 @@ public class DialogLine
 
     [TextArea(2, 5)]
     public string text;
+
+    [Tooltip("If non-empty, shows a choice prompt after this line instead of auto-advancing.")]
+    public DialogChoice[] choices;
 }
 
 /// <summary>

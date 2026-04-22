@@ -30,6 +30,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float staminaRegenDelay = 1.2f;
     public float CurrentStamina { get; private set; }
 
+    // ���� Blood ��������������������������������������������������������������������������������������������������������������������������������
+
+    [Header("BloodGage")]
+    public float maxBloodGage = 100f;
+    public float CurrentBloodGage { get; private set; }
+
     // ���� Light Attack ��������������������������������������������������������������������������������������������������������������������
 
     [Header("Light Attack")]
@@ -50,6 +56,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float heavyKnockback = 7f;
     public float heavyStartupDuration = 0.25f;
     public float heavySliceForcePower = 9f;
+
+    // ���� Ladder ��������������������������������������������������������������������������������������������������������������������������������
+
+    [Header("Ladder")]
+    public float climbSpeed = 3f;
 
     // ���� Dodge ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -87,6 +98,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     [Header("References")]
     public Transform hitPoint;
+    [SerializeField] private GameObject bloodSpherePrefab;
 
     // ���� State ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -103,11 +115,14 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     float staminaRegenTimer;
     float moveInput;
+    float climbInput;
     bool jumpQueued;
     int lastFacingDir = 1;
 
     bool isOnSlope;
     Vector2 slopeNormal;
+
+    bool isOnLadder;
 
     float nextSliceTime;
     LineRenderer slashLine;
@@ -116,6 +131,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     SpriteRenderer sr;
     _2DActions actions;
     EffectGenerator effects;
+    BloodPuddleMaker bloodPuddleMaker;
 
     // ���� Unity ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -133,6 +149,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions = new _2DActions();
         slashLine = BuildSlashLine();
         effects = GetComponent<EffectGenerator>();
+        bloodPuddleMaker = GetComponent<BloodPuddleMaker>();
     }
 
     void OnDestroy()
@@ -146,10 +163,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Move.canceled += OnMove;
         actions.Player2D.Jump.performed += OnJump;
         actions.Player2D.LightAttack.performed += OnLightAttack;
-        actions.Player2D.HeavyAttack.performed += OnHeavyAttack;
+        //actions.Player2D.HeavyAttack.performed += OnHeavyAttack;
         actions.Player2D.Dodge.performed += OnDodge;
         actions.Player2D.Guard.performed += OnGuardStart;
         actions.Player2D.Guard.canceled += OnGuardEnd;
+        actions.Player2D.Parry.performed += OnParry;
+        actions.Player2D.Gather.performed += ctx => SphereSummon();
         actions.Player2D.Enable();
     }
 
@@ -159,10 +178,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Move.canceled -= OnMove;
         actions.Player2D.Jump.performed -= OnJump;
         actions.Player2D.LightAttack.performed -= OnLightAttack;
-        actions.Player2D.HeavyAttack.performed -= OnHeavyAttack;
+        //actions.Player2D.HeavyAttack.performed -= OnHeavyAttack;
         actions.Player2D.Dodge.performed -= OnDodge;
         actions.Player2D.Guard.performed -= OnGuardStart;
         actions.Player2D.Guard.canceled -= OnGuardEnd;
+        actions.Player2D.Parry.performed -= OnParry;
+        actions.Player2D.Gather.performed -= ctx => SphereSummon();
         actions.Player2D.Disable();
     }
 
@@ -182,6 +203,13 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         if (isDodging) return;
 
+        if (isOnLadder)
+        {
+            rb.gravityScale = 0f;
+            rb.linearVelocity = new Vector2(moveInput * speed, climbInput * climbSpeed);
+            return;
+        }
+
         if (jumpQueued)
         {
             rb.gravityScale = 1f;
@@ -192,14 +220,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         if (isOnSlope && moveInput != 0)
         {
-            // Move along slope direction and suppress gravity so we don't float off
             Vector2 slopeDir = new(slopeNormal.y, -slopeNormal.x);
             rb.gravityScale = 0f;
             rb.linearVelocity = moveInput * speed * slopeDir;
         }
         else if (isOnSlope && moveInput == 0)
         {
-            // Standing still on slope: kill all velocity so we don't slide or float
             rb.gravityScale = 0f;
             rb.linearVelocity = Vector2.zero;
         }
@@ -230,13 +256,21 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnMove(InputAction.CallbackContext ctx)
     {
-        moveInput = ctx.ReadValue<Vector2>().x;
+        Vector2 input = ctx.ReadValue<Vector2>();
+        moveInput = input.x;
+        climbInput = input.y;
         if (moveInput != 0f)
             lastFacingDir = (int)Mathf.Sign(moveInput);
     }
 
     void OnJump(InputAction.CallbackContext ctx)
     {
+        if (isOnLadder)
+        {
+            ExitLadder();
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce * 0.6f);
+            return;
+        }
         if (IsGrounded())
             jumpQueued = true;
     }
@@ -284,6 +318,22 @@ public class PlayerControl : MonoBehaviour, IDamageable
         isParryActive = false;
     }
 
+    void OnParry(InputAction.CallbackContext ctx)
+    {
+        if (isDodging || isAttacking || IsGuarding) return;
+        if (!SpendStamina(parryStaminaCost)) return;
+        StartCoroutine(ParryCoroutine());
+    }
+
+    IEnumerator ParryCoroutine()
+    {
+        IsGuarding = true;
+        isParryActive = true;
+        yield return new WaitForSeconds(parryWindowDuration);
+        isParryActive = false;
+        IsGuarding = false;
+    }
+
     // Call this from code or bind to an input action to trigger a standalone slice.
     void OnSlice()
     {
@@ -294,13 +344,18 @@ public class PlayerControl : MonoBehaviour, IDamageable
         DoSlice(sliceForcePower);
     }
 
+    void SphereSummon()
+    {
+        Instantiate(bloodSpherePrefab, transform.position, Quaternion.identity);
+    }
+
     //���� Slice ����������������������������������������������������������������������������������������������������������������������������������
 
     void DoSlice(float forcePower = 0f)
     {
         Vector2 origin = (Vector2)transform.position + Vector2.up * 0.3f;
 
-        Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        Vector2 mouseWorld = CameraFollow2D.GameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
         Vector2 sliceDir = (mouseWorld - origin);
         if (sliceDir.sqrMagnitude < 0.001f) sliceDir = Vector2.right * FacingDir();
         sliceDir.Normalize();
@@ -324,7 +379,10 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
                 bool isDead = !hit.collider.TryGetComponent<IDamageable>(out var m) || m.IsDead;
                 if (isDead)
+                {
                     sliceable.Slice(sliceNormal, hit.point, forcePower, transform.position);
+                    if (bloodPuddleMaker != null) bloodPuddleMaker.SpawnStrongPuddle(hit.point);
+                }
             }
             else if (hit.collider.TryGetComponent<IDamageable>(out var damageable))
                 damageable.TakeDamage(sliceDamage);
@@ -509,6 +567,20 @@ public class PlayerControl : MonoBehaviour, IDamageable
         CurrentStamina = Mathf.Min(CurrentStamina + staminaRegen * Time.deltaTime, maxStamina);
     }
 
+    // ���� BloodGage ����������������������������������������������������������������������������������������������������������������������������������
+
+    public void AddBloodGage(float amount)
+    {
+        CurrentBloodGage = Mathf.Min(CurrentBloodGage + amount, maxBloodGage);
+    }
+    public bool ConsumeBloodGage(float amount)
+    {
+        if (CurrentBloodGage < amount)
+            return false;
+        CurrentBloodGage = Mathf.Max(CurrentBloodGage - amount, 0f);
+        return true;
+    }
+
     // ���� Helpers ������������������������������������������������������������������������������������������������������������������������������
 
     void HitEnemies(Vector2 origin, float radius, float damage, float knockback, int dir)
@@ -524,12 +596,20 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
             // Spawn blood at the closest surface point facing the attacker
             Vector2 contactPt = col.ClosestPoint(origin);
-            Vector2 normal     = (contactPt - (Vector2)col.bounds.center).normalized;
+            Vector2 normal = (contactPt - (Vector2)col.bounds.center).normalized;
             SpawnBlood(contactPt, normal);
         }
     }
 
-    void SpawnBlood(Vector2 point, Vector2 normal) => effects?.SpawnBlood(point, normal);
+    void SpawnBlood(Vector2 point, Vector2 normal)
+    {
+        effects?.SpawnBlood(point, normal);
+        if (bloodPuddleMaker != null)
+        {
+            Vector2 _randomPoint = new Vector2(point.x + Random.Range(-0.5f, 0.5f), point.y);
+            bloodPuddleMaker.SpawnPuddle(_randomPoint);
+        }
+    }
 
 
     Vector2 HitOrigin(float range)
@@ -537,6 +617,20 @@ public class PlayerControl : MonoBehaviour, IDamageable
         return hitPoint != null
             ? (Vector2)hitPoint.position
             : (Vector2)transform.position + Vector2.right * FacingDir() * range * 0.5f;
+    }
+
+    public void EnterLadder()
+    {
+        isOnLadder = true;
+        jumpQueued = false;
+        rb.gravityScale = 0f;
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    public void ExitLadder()
+    {
+        isOnLadder = false;
+        rb.gravityScale = 1f;
     }
 
     public void SetInputEnabled(bool enabled)

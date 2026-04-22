@@ -38,6 +38,12 @@ public class DialogSystem : MonoBehaviour
     [Tooltip("Characters per second. 0 = instant.")]
     public float charsPerSecond = 40f;
 
+    [Header("Choices")]
+    [Tooltip("Parent transform where choice buttons are spawned.")]
+    public Transform choiceContainer;
+    [Tooltip("Prefab with Button + DialogChoiceButton + TMP label.")]
+    public GameObject choiceButtonPrefab;
+
     public bool IsOpen { get; private set; }
 
     // ── State ─────────────────────────────────────────────────────────────────
@@ -45,6 +51,7 @@ public class DialogSystem : MonoBehaviour
     Dialog current;
     int lineIndex;
     bool isTyping;
+    bool isShowingChoices;
 
     Coroutine typewriterRoutine;
 
@@ -77,11 +84,18 @@ public class DialogSystem : MonoBehaviour
     /// <summary>Press Interact to advance. First press skips typewriter; second advances.</summary>
     public void Advance()
     {
-        if (!IsOpen) return;
+        if (!IsOpen || isShowingChoices) return;
 
         if (isTyping)
         {
             SkipTypewriter();
+            return;
+        }
+
+        DialogLine line = current.lines[lineIndex];
+        if (line.choices != null && line.choices.Length > 0)
+        {
+            ShowChoices(line.choices);
             return;
         }
 
@@ -96,11 +110,48 @@ public class DialogSystem : MonoBehaviour
     {
         StopAllCoroutines();
         isTyping = false;
+        isShowingChoices = false;
         IsOpen = false;
         current = null;
+        ClearChoices();
         dialogPanel.SetActive(false);
         dialogIlust.ToggleShow();
         if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(true);
+    }
+
+    void ShowChoices(DialogChoice[] choices)
+    {
+        isShowingChoices = true;
+        if (choiceContainer != null) choiceContainer.gameObject.SetActive(true);
+
+        foreach (var choice in choices)
+        {
+            var go = Instantiate(choiceButtonPrefab, choiceContainer);
+            if (go.TryGetComponent<DialogChoiceButton>(out var btn))
+            {
+                var captured = choice;
+                btn.Setup(captured.text, () => OnChoicePicked(captured.nextDialog));
+            }
+        }
+    }
+
+    void OnChoicePicked(Dialog nextDialog)
+    {
+        ClearChoices();
+        isShowingChoices = false;
+
+        if (nextDialog != null)
+            Open(nextDialog);
+        else
+            Close();
+    }
+
+    void ClearChoices()
+    {
+        if (choiceContainer == null) return;
+        choiceContainer.gameObject.SetActive(false);
+        for (int i = choiceContainer.childCount - 1; i >= 0; i--)
+            Destroy(choiceContainer.GetChild(i).gameObject);
     }
 
     // ── Internal ──────────────────────────────────────────────────────────────

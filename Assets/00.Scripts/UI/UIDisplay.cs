@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 
 public class UIDisplay : MonoBehaviour
@@ -8,7 +9,6 @@ public class UIDisplay : MonoBehaviour
     [Header("References")]
     public Inventory inventory;
     public GameObject slotPrefab;
-
 
     [Header("UI Panels")]
     public GameObject PanelContainer; // Parent object for all panels (optional)
@@ -29,7 +29,50 @@ public class UIDisplay : MonoBehaviour
     private bool savePanelOpen = false;
     private bool PanelOpen = false;
 
+    _2DActions actions;
+
     // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    void Awake()
+    {
+        actions = new _2DActions();
+    }
+
+    void OnEnable()
+    {
+        actions.Player2D.Escape.performed += OnEscape;
+        actions.Player2D.Enable();
+    }
+
+    void OnDisable()
+    {
+        actions.Player2D.Escape.performed -= OnEscape;
+        actions.Player2D.Disable();
+    }
+
+    void OnEscape(InputAction.CallbackContext ctx) => ToggleMenu();
+
+    public void ToggleMenu()
+    {
+        if (PanelOpen) CloseMenu();
+        else OpenMenu();
+    }
+
+    public void OpenMenu()
+    {
+        PanelOpen = true;
+        Time.timeScale = 0f;
+        if (PanelContainer != null) PanelContainer.SetActive(true);
+        if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(false);
+    }
+
+    public void CloseMenu()
+    {
+        PanelOpen = false;
+        Time.timeScale = 1f;
+        if (PanelContainer != null) PanelContainer.SetActive(false);
+        if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(true);
+    }
 
     private void Start()
     {
@@ -49,7 +92,7 @@ public class UIDisplay : MonoBehaviour
 
         CloseInventory();
         CloseSavePanel();
-        ClosePanel();
+        CloseMenu();
     }
 
     // ── Inventory Toggle (for buttons) ───────────────────────────────────────
@@ -95,28 +138,6 @@ public class UIDisplay : MonoBehaviour
         savePanelOpen = false;
         if (savePanel != null)
             savePanel.SetActive(false);
-    }
-
-    // ── Panel Toggle (for buttons) ─────────────────────────────────────
-
-    public void TogglePanel()
-    {
-        if (PanelOpen) ClosePanel();
-        else OpenPanel();
-    }
-
-    public void OpenPanel()
-    {
-        PanelOpen = true;
-        if (PanelContainer != null)
-            PanelContainer.SetActive(true);
-    }
-
-    public void ClosePanel()
-    {
-        PanelOpen = false;
-        if (PanelContainer != null)
-            PanelContainer.SetActive(false);
     }
 
     void closeAllPanels()

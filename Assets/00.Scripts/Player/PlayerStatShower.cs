@@ -32,14 +32,19 @@ public class PlayerStatShower : MonoBehaviour
     [SerializeField] private Slider staminaBar;
     [SerializeField] private TextMeshProUGUI staminaText;  // optional – shows "60 / 100"
 
+    [Header("Blood Gage Bar")]
+    [SerializeField] private Slider bloodGageBar;
+    [SerializeField] private TextMeshProUGUI bloodGageText;  // optional – shows "50 / 100"
+
     [Header("Low-Stat Flash")]
-    [SerializeField, Range(0f, 1f)] private float lowHpThreshold      = 0.22f;
+    [SerializeField, Range(0f, 1f)] private float lowHpThreshold = 0.22f;
     [SerializeField, Range(0f, 1f)] private float lowStaminaThreshold = 0.20f;
-    [SerializeField] private Color hpNormalColor    = new Color(0.85f, 0.15f, 0.15f);  // red
-    [SerializeField] private Color hpLowColor       = new Color(1.00f, 0.30f, 0.00f);  // orange
+    [SerializeField] private Color hpNormalColor = new Color(0.85f, 0.15f, 0.15f);  // red
+    [SerializeField] private Color hpLowColor = new Color(1.00f, 0.30f, 0.00f);  // orange
     [SerializeField] private Color staminaFullColor = new Color(0.10f, 0.80f, 0.20f);  // green
-    [SerializeField] private Color staminaLowColor  = new Color(0.50f, 0.50f, 0.50f);  // grey
-    [SerializeField] private float flashSpeed       = 4f;
+    [SerializeField] private Color staminaLowColor = new Color(0.50f, 0.50f, 0.50f);  // grey
+    [SerializeField] private Color bloodGageColor = new Color(0.35f, 0.02f, 0.02f);  // dark red
+    [SerializeField] private float flashSpeed = 4f;
 
     // ── Unity ─────────────────────────────────────────────────────────────────
 
@@ -55,14 +60,17 @@ public class PlayerStatShower : MonoBehaviour
     {
         if (combat == null) return;
 
-        float hpRatio = combat.maxHp      > 0f ? combat.CurrentHp      / combat.maxHp      : 0f;
-        float stRatio = combat.maxStamina > 0f ? combat.CurrentStamina / combat.maxStamina : 0f;
+        float hpRatio    = combat.maxHp > 0f          ? combat.CurrentHp       / combat.maxHp          : 0f;
+        float stRatio    = combat.maxStamina > 0f     ? combat.CurrentStamina  / combat.maxStamina     : 0f;
+        float bloodRatio = combat.maxBloodGage > 0f   ? combat.CurrentBloodGage / combat.maxBloodGage  : 0f;
 
-        UpdateBar(hpBar,      hpRatio,  hpNormalColor,    hpLowColor,      lowHpThreshold);
-        UpdateBar(staminaBar, stRatio,  staminaFullColor, staminaLowColor, lowStaminaThreshold);
+        UpdateBar(hpBar,       hpRatio,    hpNormalColor,   hpLowColor,   lowHpThreshold);
+        UpdateBar(staminaBar,  stRatio,    staminaFullColor, staminaLowColor, lowStaminaThreshold);
+        UpdateBloodBar(bloodRatio);
 
-        UpdateText(hpText,      combat.CurrentHp,      combat.maxHp);
-        UpdateText(staminaText, combat.CurrentStamina, combat.maxStamina);
+        UpdateText(hpText,        combat.CurrentHp,       combat.maxHp);
+        UpdateText(staminaText,   combat.CurrentStamina,  combat.maxStamina);
+        UpdateText(bloodGageText, combat.CurrentBloodGage, combat.maxBloodGage);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -85,6 +93,14 @@ public class PlayerStatShower : MonoBehaviour
         {
             fill.color = normalColor;
         }
+    }
+
+    void UpdateBloodBar(float ratio)
+    {
+        if (bloodGageBar == null) return;
+        bloodGageBar.value = ratio;
+        Image fill = bloodGageBar.fillRect != null ? bloodGageBar.fillRect.GetComponent<Image>() : null;
+        if (fill != null) fill.color = bloodGageColor;
     }
 
     void UpdateText(TextMeshProUGUI label, float current, float max)

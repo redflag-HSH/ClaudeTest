@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class CameraFollow2D : MonoBehaviour
 {
+    static CameraFollow2D _mainCameraInstance;
+    public static Camera GameCamera => _mainCameraInstance != null ? _mainCameraInstance._cam : null;
+
     [Header("Target")]
     public Transform target;
 
@@ -21,7 +24,14 @@ public class CameraFollow2D : MonoBehaviour
     [Header("Shake")]
     public float shakeFrequency = 25f;   // oscillations per second
 
+    private Camera _cam;
     private float _cameraZ;
+
+    void Awake()
+    {
+        _cam = GetComponent<Camera>();
+        _mainCameraInstance = this;
+    }
 
     // shake state
     private float _shakeDuration;
@@ -32,6 +42,12 @@ public class CameraFollow2D : MonoBehaviour
 
     void Start()
     {
+        if (_mainCameraInstance != null && _mainCameraInstance != this)
+        {
+            Debug.LogWarning("Multiple CameraFollow2D instances marked as main camera! There should only be one. This instance will not function as main camera.", this);
+            return;
+        }
+        _mainCameraInstance = this;
         _cameraZ = transform.position.z;
 
         if (target == null && PlayerControl.Instance != null)
@@ -113,25 +129,25 @@ public class CameraFollow2D : MonoBehaviour
     /// <summary>Shake with constant magnitude for a duration.</summary>
     public void Shake(float duration, float magnitude)
     {
-        _shakeDuration  = duration;
-        _shakeTimer     = duration;
+        _shakeDuration = duration;
+        _shakeTimer = duration;
         _shakeMagnitude = magnitude;
-        _shakeDecay     = 0f;
+        _shakeDecay = 0f;
     }
 
     /// <summary>Shake that fades out smoothly over the duration.</summary>
     public void ShakeFadeOut(float duration, float magnitude)
     {
-        _shakeDuration  = duration;
-        _shakeTimer     = duration;
+        _shakeDuration = duration;
+        _shakeTimer = duration;
         _shakeMagnitude = magnitude;
-        _shakeDecay     = magnitude / duration;   // reaches 0 at end
+        _shakeDecay = magnitude / duration;   // reaches 0 at end
     }
 
     /// <summary>Stop any ongoing shake immediately.</summary>
     public void StopShake()
     {
-        _shakeTimer    = 0f;
-        _shakeOffset   = Vector2.zero;
+        _shakeTimer = 0f;
+        _shakeOffset = Vector2.zero;
     }
 }

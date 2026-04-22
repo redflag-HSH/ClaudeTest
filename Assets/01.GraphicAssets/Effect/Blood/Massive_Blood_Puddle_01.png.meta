@@ -1,0 +1,676 @@
+fileFormatVersion: 2
+guid: cda79db5651e5a34d8662749d6bf664a
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 5440629002233182073
+    second: Massive_Blood_Puddle_01_0
+  - first:
+      213: 8609308999524028380
+    second: Massive_Blood_Puddle_01_1
+  - first:
+      213: -73398938175473570
+    second: Massive_Blood_Puddle_01_2
+  - first:
+      213: -5668960963098921036
+    second: Massive_Blood_Puddle_01_3
+  - first:
+      213: -9066990798024678904
+    second: Massive_Blood_Puddle_01_4
+  - first:
+      213: -4050189581604608771
+    second: Massive_Blood_Puddle_01_5
+  - first:
+      213: 8292780852486796495
+    second: Massive_Blood_Puddle_01_6
+  - first:
+      213: -3255318335382492209
+    second: Massive_Blood_Puddle_01_7
+  - first:
+      213: -885030813662625422
+    second: Massive_Blood_Puddle_01_8
+  - first:
+      213: -5663401239013101467
+    second: Massive_Blood_Puddle_01_9
+  - first:
+      213: 7597619330373531310
+    second: Massive_Blood_Puddle_01_10
+  - first:
+      213: -4243105186715150421
+    second: Massive_Blood_Puddle_01_11
+  - first:
+      213: 5370893234811758759
+    second: Massive_Blood_Puddle_01_12
+  - first:
+      213: -7044123482534667539
+    second: Massive_Blood_Puddle_01_13
+  - first:
+      213: 2064000423843915582
+    second: Massive_Blood_Puddle_01_14
+  - first:
+      213: -1398032774858323123
+    second: Massive_Blood_Puddle_01_15
+  - first:
+      213: 4699102581499717013
+    second: Massive_Blood_Puddle_01_16
+  - first:
+      213: -2333602506080998913
+    second: Massive_Blood_Puddle_01_17
+  - first:
+      213: -5700071356158502391
+    second: Massive_Blood_Puddle_01_18
+  - first:
+      213: 4305377867087570209
+    second: Massive_Blood_Puddle_01_19
+  - first:
+      213: 3553853331108600585
+    second: Massive_Blood_Puddle_01_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_0
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 0
+        width: 1001
+        height: 710
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 977fbc8704ff08b40800000000000000
+      internalID: 5440629002233182073
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_1
+      rect:
+        serializedVersion: 2
+        x: 285
+        y: 691
+        width: 19
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cdf0436cbe86a7770800000000000000
+      internalID: 8609308999524028380
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_2
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 692
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e58f82bfd0c3bfef0800000000000000
+      internalID: -73398938175473570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_3
+      rect:
+        serializedVersion: 2
+        x: 398
+        y: 696
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b7beec1a0ec351b0800000000000000
+      internalID: -5668960963098921036
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_4
+      rect:
+        serializedVersion: 2
+        x: 423
+        y: 671
+        width: 23
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 802e00e78e39b2280800000000000000
+      internalID: -9066990798024678904
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_5
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 419
+        width: 17
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df4287bc806dac7c0800000000000000
+      internalID: -4050189581604608771
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_6
+      rect:
+        serializedVersion: 2
+        x: 52
+        y: 427
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc4f2a09f30e51370800000000000000
+      internalID: 8292780852486796495
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_7
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 356
+        width: 17
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fcbe5bca839c2d2d0800000000000000
+      internalID: -3255318335382492209
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_8
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 345
+        width: 14
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2714d500a2db7b3f0800000000000000
+      internalID: -885030813662625422
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_9
+      rect:
+        serializedVersion: 2
+        x: 1030
+        y: 333
+        width: 23
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 560fd10449e8761b0800000000000000
+      internalID: -5663401239013101467
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_10
+      rect:
+        serializedVersion: 2
+        x: 29
+        y: 342
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea63e8de68a207960800000000000000
+      internalID: 7597619330373531310
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_11
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 345
+        width: 11
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba7d93940567d15c0800000000000000
+      internalID: -4243105186715150421
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_12
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 338
+        width: 11
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7a8e08bd0fe398a40800000000000000
+      internalID: 5370893234811758759
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_13
+      rect:
+        serializedVersion: 2
+        x: 1016
+        y: 342
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dea9885930f3e3e90800000000000000
+      internalID: -7044123482534667539
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_14
+      rect:
+        serializedVersion: 2
+        x: 1017
+        y: 332
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e37e87f237dc4ac10800000000000000
+      internalID: 2064000423843915582
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_15
+      rect:
+        serializedVersion: 2
+        x: 1027
+        y: 324
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4b473e2990399ce0800000000000000
+      internalID: -1398032774858323123
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_16
+      rect:
+        serializedVersion: 2
+        x: 1044
+        y: 326
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5956965a6e0963140800000000000000
+      internalID: 4699102581499717013
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_17
+      rect:
+        serializedVersion: 2
+        x: 1054
+        y: 314
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ff9a41a72e06d9fd0800000000000000
+      internalID: -2333602506080998913
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_18
+      rect:
+        serializedVersion: 2
+        x: 1014
+        y: 318
+        width: 11
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90a1bc54d4745e0b0800000000000000
+      internalID: -5700071356158502391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_19
+      rect:
+        serializedVersion: 2
+        x: 1069
+        y: 306
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1256597fb56cfbb30800000000000000
+      internalID: 4305377867087570209
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Massive_Blood_Puddle_01_20
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 259
+        width: 14
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90b119886c2d15130800000000000000
+      internalID: 3553853331108600585
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Massive_Blood_Puddle_01_0: 5440629002233182073
+      Massive_Blood_Puddle_01_1: 8609308999524028380
+      Massive_Blood_Puddle_01_10: 7597619330373531310
+      Massive_Blood_Puddle_01_11: -4243105186715150421
+      Massive_Blood_Puddle_01_12: 5370893234811758759
+      Massive_Blood_Puddle_01_13: -7044123482534667539
+      Massive_Blood_Puddle_01_14: 2064000423843915582
+      Massive_Blood_Puddle_01_15: -1398032774858323123
+      Massive_Blood_Puddle_01_16: 4699102581499717013
+      Massive_Blood_Puddle_01_17: -2333602506080998913
+      Massive_Blood_Puddle_01_18: -5700071356158502391
+      Massive_Blood_Puddle_01_19: 4305377867087570209
+      Massive_Blood_Puddle_01_2: -73398938175473570
+      Massive_Blood_Puddle_01_20: 3553853331108600585
+      Massive_Blood_Puddle_01_3: -5668960963098921036
+      Massive_Blood_Puddle_01_4: -9066990798024678904
+      Massive_Blood_Puddle_01_5: -4050189581604608771
+      Massive_Blood_Puddle_01_6: 8292780852486796495
+      Massive_Blood_Puddle_01_7: -3255318335382492209
+      Massive_Blood_Puddle_01_8: -885030813662625422
+      Massive_Blood_Puddle_01_9: -5663401239013101467
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
