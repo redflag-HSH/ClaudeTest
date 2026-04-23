@@ -122,6 +122,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     bool isOnSlope;
     Vector2 slopeNormal;
 
+    bool isNearLadder;
     bool isOnLadder;
 
     float nextSliceTime;
@@ -202,6 +203,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
     void FixedUpdate()
     {
         if (isDodging) return;
+
+        if (isNearLadder && !isOnLadder && climbInput != 0f)
+            EnterLadder();
 
         if (isOnLadder)
         {
@@ -619,7 +623,13 @@ public class PlayerControl : MonoBehaviour, IDamageable
             : (Vector2)transform.position + Vector2.right * FacingDir() * range * 0.5f;
     }
 
-    public void EnterLadder()
+    public void SetNearLadder(bool near)
+    {
+        isNearLadder = near;
+        if (!near) ExitLadder();
+    }
+
+    void EnterLadder()
     {
         isOnLadder = true;
         jumpQueued = false;

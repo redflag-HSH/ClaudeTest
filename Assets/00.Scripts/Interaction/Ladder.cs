@@ -11,12 +11,12 @@ public class Ladder : MonoBehaviour
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.TryGetComponent<PlayerControl>(out var player))
-            player.EnterLadder();
+            player.SetNearLadder(true);
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
         if (other.TryGetComponent<PlayerControl>(out var player))
-            player.ExitLadder();
+            player.SetNearLadder(false);
     }
 }
