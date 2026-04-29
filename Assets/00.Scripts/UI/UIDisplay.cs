@@ -11,23 +11,28 @@ public class UIDisplay : MonoBehaviour
     public GameObject slotPrefab;
 
     [Header("UI Panels")]
-    public GameObject PanelContainer; // Parent object for all panels (optional)
+    public GameObject PanelContainer;
     public GameObject inventoryPanel;
-    public GameObject savePanel;
+    public GameObject skillPanel;
+    public GameObject optionPanel;
+    public GameObject quitPanel;
+    public GameObject gameOverPanel;
+
     [Header("InventoryUI Elements")]
-    public Transform slotContainer;   // ScrollView > Viewport > Content
+    public Transform slotContainer;
     public ScrollRect scrollView;
     public GridLayoutGroup gridLayout;
     public TextMeshProUGUI itemCountText;
+    public Button quitPanelQuitButton;
 
     [Header("InventoryGrid")]
     public int columnCount = 4;
     public Vector2 cellSize = new(80f, 80f);
     public Vector2 spacing = new(8f, 8f);
 
-    private bool inventoryOpen = false;
-    private bool savePanelOpen = false;
     private bool PanelOpen = false;
+    private int currentPanelIndex = 0;
+    private GameObject[] panels;
 
     _2DActions actions;
 
@@ -36,42 +41,42 @@ public class UIDisplay : MonoBehaviour
     void Awake()
     {
         actions = new _2DActions();
+        panels = new GameObject[] { inventoryPanel, skillPanel, optionPanel, quitPanel };
     }
 
     void OnEnable()
     {
         actions.Player2D.Escape.performed += OnEscape;
+        actions.Player2D.Move.performed += OnMove;
         actions.Player2D.Enable();
+        GameManager.OnGameOver += ShowGameOverScreen;
+        quitPanelQuitButton.onClick.AddListener(() => GameManager.Instance.GoToMainMenu());
     }
 
     void OnDisable()
     {
         actions.Player2D.Escape.performed -= OnEscape;
+        actions.Player2D.Move.performed -= OnMove;
         actions.Player2D.Disable();
+        GameManager.OnGameOver -= ShowGameOverScreen;
+        quitPanelQuitButton.onClick.RemoveListener(() => GameManager.Instance.GoToMainMenu());
     }
 
     void OnEscape(InputAction.CallbackContext ctx) => ToggleMenu();
 
-    public void ToggleMenu()
+    void OnMove(InputAction.CallbackContext ctx)
     {
-        if (PanelOpen) CloseMenu();
-        else OpenMenu();
+        if (!PanelOpen) return;
+
+        float x = ctx.ReadValue<Vector2>().x;
+        if (x > 0.5f) NavigatePanel(1);
+        else if (x < -0.5f) NavigatePanel(-1);
     }
 
-    public void OpenMenu()
+    void NavigatePanel(int dir)
     {
-        PanelOpen = true;
-        Time.timeScale = 0f;
-        if (PanelContainer != null) PanelContainer.SetActive(true);
-        if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(false);
-    }
-
-    public void CloseMenu()
-    {
-        PanelOpen = false;
-        Time.timeScale = 1f;
-        if (PanelContainer != null) PanelContainer.SetActive(false);
-        if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(true);
+        currentPanelIndex = (currentPanelIndex + dir + panels.Length) % panels.Length;
+        ShowPanel(currentPanelIndex);
     }
 
     private void Start()
@@ -90,63 +95,85 @@ public class UIDisplay : MonoBehaviour
             gridLayout.spacing = spacing;
         }
 
-        CloseInventory();
-        CloseSavePanel();
+        panels = new GameObject[] { inventoryPanel, skillPanel, optionPanel, quitPanel };
+
+        CloseAllPanels();
+        HideGameOverScreen();
         CloseMenu();
     }
 
-    // ── Inventory Toggle (for buttons) ───────────────────────────────────────
+    // ── Menu Container ───────────────────────────────────────────────────────
 
-    public void ToggleInventory()
+    public void ToggleMenu()
     {
-        if (inventoryOpen) CloseInventory();
-        else OpenInventory();
+        if (PanelOpen) CloseMenu();
+        else OpenMenu();
     }
 
-    public void OpenInventory()
+    public void OpenMenu()
     {
-        closeAllPanels();
-        inventoryOpen = true;
-        inventoryPanel.SetActive(true);
-        RefreshDisplay();
+        PanelOpen = true;
+        Time.timeScale = 0f;
+        if (PanelContainer != null) PanelContainer.SetActive(true);
+        if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(false);
+        ShowPanel(currentPanelIndex);
     }
 
-    public void CloseInventory()
+    public void CloseMenu()
     {
-        inventoryOpen = false;
-        inventoryPanel.SetActive(false);
+        PanelOpen = false;
+        Time.timeScale = 1f;
+        CloseAllPanels();
+        if (PanelContainer != null) PanelContainer.SetActive(false);
+        if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(true);
     }
 
-    // ── Save Panel Toggle (for buttons) ─────────────────────────────────────
+    // ── Panel Navigation ─────────────────────────────────────────────────────
 
-    public void ToggleSavePanel()
+    void ShowPanel(int index)
     {
-        if (savePanelOpen) CloseSavePanel();
-        else OpenSavePanel();
+        CloseAllPanels();
+        if (panels[index] != null) panels[index].SetActive(true);
+        if (index == 0) RefreshDisplay();
     }
 
-    public void OpenSavePanel()
+    public void OpenInventory() => OpenMenuAtIndex(0);
+    public void OpenSkillPanel() => OpenMenuAtIndex(1);
+    public void OpenOptionPanel() => OpenMenuAtIndex(2);
+    public void OpenQuitPanel() => OpenMenuAtIndex(3);
+
+    void OpenMenuAtIndex(int index)
     {
-        closeAllPanels();
-        savePanelOpen = true;
-        if (savePanel != null)
-            savePanel.SetActive(true);
+        currentPanelIndex = index;
+        if (!PanelOpen) OpenMenu();
+        else ShowPanel(index);
     }
 
-    public void CloseSavePanel()
+    // ── Game Over Screen ─────────────────────────────────────────────────────
+
+    public void ShowGameOverScreen()
     {
-        savePanelOpen = false;
-        if (savePanel != null)
-            savePanel.SetActive(false);
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(true);
     }
 
-    void closeAllPanels()
+    public void HideGameOverScreen()
     {
-        CloseInventory();
-        CloseSavePanel();
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(false);
     }
 
-    // ── Inventory Display ──────────────────────────────────────────────────────────────
+    // ── Shared ───────────────────────────────────────────────────────────────
+
+    public void CloseAllPanels()
+    {
+        if (inventoryPanel != null) inventoryPanel.SetActive(false);
+        if (skillPanel != null) skillPanel.SetActive(false);
+        if (optionPanel != null) optionPanel.SetActive(false);
+        if (quitPanel != null) quitPanel.SetActive(false);
+    }
+
+    // ── Inventory Display ─────────────────────────────────────────────────────
 
     public void RefreshDisplay()
     {
@@ -172,7 +199,7 @@ public class UIDisplay : MonoBehaviour
         }
     }
 
-    // ── Inventory Helpers ──────────────────────────────────────────────────────────────
+    // ── Inventory Helpers ─────────────────────────────────────────────────────
 
     private void CreateSlotUI(Inventory.InventorySlot slot)
     {

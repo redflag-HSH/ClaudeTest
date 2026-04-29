@@ -133,6 +133,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     _2DActions actions;
     EffectGenerator effects;
     BloodPuddleMaker bloodPuddleMaker;
+    PlayerSkill playerSkill;
 
     // ���� Unity ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -151,6 +152,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         slashLine = BuildSlashLine();
         effects = GetComponent<EffectGenerator>();
         bloodPuddleMaker = GetComponent<BloodPuddleMaker>();
+        playerSkill = GetComponent<PlayerSkill>();
     }
 
     void OnDestroy()
@@ -170,6 +172,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Guard.canceled += OnGuardEnd;
         actions.Player2D.Parry.performed += OnParry;
         actions.Player2D.Gather.performed += ctx => SphereSummon();
+        actions.Player2D.Skill.performed += OnSkill;
         actions.Player2D.Enable();
     }
 
@@ -185,6 +188,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Guard.canceled -= OnGuardEnd;
         actions.Player2D.Parry.performed -= OnParry;
         actions.Player2D.Gather.performed -= ctx => SphereSummon();
+        actions.Player2D.Skill.performed -= OnSkill;
         actions.Player2D.Disable();
     }
 
@@ -351,6 +355,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
     void SphereSummon()
     {
         Instantiate(bloodSpherePrefab, transform.position, Quaternion.identity);
+    }
+
+    void OnSkill(InputAction.CallbackContext ctx)
+    {
+        playerSkill?.UseSkill();
     }
 
     //���� Slice ����������������������������������������������������������������������������������������������������������������������������������
@@ -547,6 +556,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         CurrentHp = 0f;
         IsDead = true;
+        SetInputEnabled(false);
+        rb.linearVelocity = Vector2.zero;
         Debug.Log("Player died.");
     }
 
@@ -572,6 +583,17 @@ public class PlayerControl : MonoBehaviour, IDamageable
     }
 
     // ���� BloodGage ����������������������������������������������������������������������������������������������������������������������������������
+
+    public void Heal(float amount)
+    {
+        if (IsDead) return;
+        CurrentHp = Mathf.Min(CurrentHp + amount, maxHp);
+    }
+
+    public void RestoreStamina(float amount)
+    {
+        CurrentStamina = Mathf.Min(CurrentStamina + amount, maxStamina);
+    }
 
     public void AddBloodGage(float amount)
     {
@@ -656,7 +678,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
     }
 
-    int FacingDir() => lastFacingDir;
+    public int FacingDir() => lastFacingDir;
 
     bool IsGrounded()
     {

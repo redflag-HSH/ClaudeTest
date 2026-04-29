@@ -22,9 +22,6 @@ public class BloodSphere : MonoBehaviour
     {
         if (collision.CompareTag("Player") && _absorbedCount >= _pondCount)
         {
-            // 플레이어가 혈구를 흡수하는 로직을 구현합니다.
-            Debug.Log("Player absorbed the blood sphere!" + bloodCount);
-            // 예시: 플레이어의 혈액량을 증가시키거나, 특정 효과를 발동시키는 등의 행동을 할 수 있습니다.
             PlayerControl player = collision.GetComponent<PlayerControl>();
             if (player != null)
             {

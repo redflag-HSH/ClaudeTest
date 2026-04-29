@@ -52,6 +52,8 @@ public class CameraFollow2D : MonoBehaviour
 
         if (target == null && PlayerControl.Instance != null)
             target = PlayerControl.Instance.transform;
+
+        SnapToTarget();
     }
 
     void LateUpdate()

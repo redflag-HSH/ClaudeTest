@@ -159,7 +159,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""name"": ""Skill"",
                     ""type"": ""Button"",
                     ""id"": ""11111111-1111-1111-1111-111111111109"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -168,7 +168,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""name"": ""SkillChange"",
                     ""type"": ""Button"",
                     ""id"": ""11111111-1111-1111-1111-111111111110"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false

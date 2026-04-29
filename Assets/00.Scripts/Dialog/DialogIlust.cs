@@ -19,8 +19,13 @@ public class DialogIlust : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] float dimmedAlpha = 0.45f;
 
+    bool leftHasSpoken;
+    bool rightHasSpoken;
+
     void Start()
     {
+        leftHasSpoken = false;
+        rightHasSpoken = false;
         ToggleShow();
     }
 
@@ -28,11 +33,18 @@ public class DialogIlust : MonoBehaviour
     {
         bool leftSpeaking = line.side == DialogSide.Left;
 
+        if (leftSpeaking) leftHasSpoken = true;
+        else rightHasSpoken = true;
+
         if (portraitLeft != null)
         {
             if (leftSpeaking && line.portrait != null)
                 portraitLeft.sprite = line.portrait;
-            SetAlpha(portraitLeft, leftSpeaking ? 1f : dimmedAlpha);
+
+            if (!leftHasSpoken)
+                SetAlpha(portraitLeft, 0f);
+            else
+                SetAlpha(portraitLeft, leftSpeaking ? 1f : dimmedAlpha);
         }
 
         if (portraitRight != null)
@@ -40,7 +52,10 @@ public class DialogIlust : MonoBehaviour
             if (!leftSpeaking && line.portrait != null)
                 portraitRight.sprite = line.portrait;
 
-            SetAlpha(portraitRight, leftSpeaking ? dimmedAlpha : 1f);
+            if (!rightHasSpoken)
+                SetAlpha(portraitRight, 0f);
+            else
+                SetAlpha(portraitRight, leftSpeaking ? dimmedAlpha : 1f);
         }
     }
 
@@ -67,5 +82,12 @@ public class DialogIlust : MonoBehaviour
         bool isActive = portraitLeft.gameObject.activeSelf;
         portraitLeft.gameObject.SetActive(!isActive);
         portraitRight.gameObject.SetActive(!isActive);
+
+        if (!isActive) return;
+
+        leftHasSpoken  = false;
+        rightHasSpoken = false;
+        SetAlpha(portraitLeft,  0f);
+        SetAlpha(portraitRight, 0f);
     }
 }
