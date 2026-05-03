@@ -36,6 +36,17 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float maxBloodGage = 100f;
     public float CurrentBloodGage { get; private set; }
 
+    [Header("BloodMoney")]
+    public int CurrentBloodMoney { get; private set; }
+
+    // ── HP Drain ──────────────────────────────────────────────────────────────
+
+    [Header("HP Drain")]
+    [Tooltip("HP lost per second passively. Set to 0 to disable.")]
+    public float hpDrainPerSecond = 2f;
+    [Tooltip("HP drain cannot reduce HP below this value.")]
+    public float hpDrainFloor = 1f;
+
     // ���� Light Attack ��������������������������������������������������������������������������������������������������������������������
 
     [Header("Light Attack")]
@@ -132,7 +143,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     SpriteRenderer sr;
     _2DActions actions;
     EffectGenerator effects;
-    BloodPuddleMaker bloodPuddleMaker;
+    public BloodPuddleMaker bloodPuddleMaker;
     PlayerSkill playerSkill;
 
     // ���� Unity ����������������������������������������������������������������������������������������������������������������������������������
@@ -201,6 +212,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         TickComboWindow();
         TickStaminaRegen();
+        TickHpDrain();
         CheckSlope();
     }
 
@@ -383,10 +395,10 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         foreach (var hit in hits)
         {
-            SpawnBlood(hit.point, hit.normal);
-
             if (hit.collider.TryGetComponent<EnemySliceable>(out var sliceable))
             {
+                SpawnBlood(hit.point, hit.normal, sliceable.Money / 10, sliceable.HpHeal / 10f);
+
                 if (hit.collider.TryGetComponent<IDamageable>(out var d))
                     d.TakeDamage(sliceDamage);
 
@@ -394,11 +406,15 @@ public class PlayerControl : MonoBehaviour, IDamageable
                 if (isDead)
                 {
                     sliceable.Slice(sliceNormal, hit.point, forcePower, transform.position);
-                    if (bloodPuddleMaker != null) bloodPuddleMaker.SpawnStrongPuddle(hit.point);
+                    if (bloodPuddleMaker != null) bloodPuddleMaker.SpawnStrongPuddle(hit.point, sliceable.Money, sliceable.HpHeal);
                 }
             }
-            else if (hit.collider.TryGetComponent<IDamageable>(out var damageable))
-                damageable.TakeDamage(sliceDamage);
+            else
+            {
+                SpawnBlood(hit.point, hit.normal);
+                if (hit.collider.TryGetComponent<IDamageable>(out var damageable))
+                    damageable.TakeDamage(sliceDamage);
+            }
         }
 
         StartCoroutine(ShowSlashLine(origin, endpoint));
@@ -547,6 +563,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         CurrentHp -= amount;
         StartCoroutine(HitFlash(Color.red));
+        HUDDisplay.Log($"{(int)amount} 데미지를 입었다!");
 
         if (CurrentHp <= 0f)
             Die();
@@ -582,12 +599,19 @@ public class PlayerControl : MonoBehaviour, IDamageable
         CurrentStamina = Mathf.Min(CurrentStamina + staminaRegen * Time.deltaTime, maxStamina);
     }
 
+    void TickHpDrain()
+    {
+        if (IsDead || hpDrainPerSecond <= 0f || CurrentHp <= hpDrainFloor) return;
+        CurrentHp = Mathf.Max(CurrentHp - hpDrainPerSecond * Time.deltaTime, hpDrainFloor);
+    }
+
     // ���� BloodGage ����������������������������������������������������������������������������������������������������������������������������������
 
     public void Heal(float amount)
     {
         if (IsDead) return;
         CurrentHp = Mathf.Min(CurrentHp + amount, maxHp);
+        HUDDisplay.Log($"HP {(int)amount} 회복!");
     }
 
     public void RestoreStamina(float amount)
@@ -607,6 +631,23 @@ public class PlayerControl : MonoBehaviour, IDamageable
         return true;
     }
 
+    public void AddBloodMoney(int amount)
+    {
+        CurrentBloodMoney += amount;
+    }
+
+    public bool SpendBloodMoney(int amount)
+    {
+        if (CurrentBloodMoney < amount) return false;
+        CurrentBloodMoney -= amount;
+        return true;
+    }
+
+    public void SetBloodMoney(int amount)
+    {
+        CurrentBloodMoney = Mathf.Max(amount, 0);
+    }
+
     // ���� Helpers ������������������������������������������������������������������������������������������������������������������������������
 
     void HitEnemies(Vector2 origin, float radius, float damage, float knockback, int dir)
@@ -615,7 +656,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
         foreach (var col in hits)
         {
             if (col.TryGetComponent<IDamageable>(out var target))
+            {
                 target.TakeDamage(damage);
+                if (target.IsDead && bloodPuddleMaker != null)
+                    bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
+            }
 
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
                 targetRb.AddForce(new Vector2(dir * knockback, 2f), ForceMode2D.Impulse);
@@ -627,13 +672,13 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
     }
 
-    void SpawnBlood(Vector2 point, Vector2 normal)
+    void SpawnBlood(Vector2 point, Vector2 normal, int moneyValue = 0, float hpHeal = 0f)
     {
         effects?.SpawnBlood(point, normal);
         if (bloodPuddleMaker != null)
         {
             Vector2 _randomPoint = new Vector2(point.x + Random.Range(-0.5f, 0.5f), point.y);
-            bloodPuddleMaker.SpawnPuddle(_randomPoint);
+            bloodPuddleMaker.SpawnPuddle(_randomPoint, moneyValue, hpHeal);
         }
     }
 

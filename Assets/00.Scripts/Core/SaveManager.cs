@@ -41,6 +41,7 @@ public class SaveManager : MonoBehaviour
         public float currentHp;
         public float currentStamina;
         public float currentBloodGage;
+        public int bloodMoney;
     }
 
     [Serializable]
@@ -241,6 +242,7 @@ public class SaveManager : MonoBehaviour
         player.Heal(Data.playerStats.currentHp - player.CurrentHp);
         player.RestoreStamina(Data.playerStats.currentStamina - player.CurrentStamina);
         player.AddBloodGage(Data.playerStats.currentBloodGage - player.CurrentBloodGage);
+        player.SetBloodMoney(Data.playerStats.bloodMoney);
         ApplyInventory();
     }
 
@@ -278,6 +280,7 @@ public class SaveManager : MonoBehaviour
         Data.playerStats.currentHp = player.CurrentHp;
         Data.playerStats.currentStamina = player.CurrentStamina;
         Data.playerStats.currentBloodGage = player.CurrentBloodGage;
+        Data.playerStats.bloodMoney = player.CurrentBloodMoney;
     }
 
     private void RecordSession()

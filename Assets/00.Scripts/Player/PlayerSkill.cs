@@ -41,7 +41,7 @@ public class PlayerSkill : MonoBehaviour
 
             GameObject spear = Instantiate(bloodSpearPrefab, (Vector2)transform.position + offset, Quaternion.identity);
             if (spear.TryGetComponent<BloodSpear>(out var bs))
-                bs.Init(transform, offset, _player.FacingDir(), spearDamage, _player.enemyLayer);
+                bs.Init(transform, offset, _player.FacingDir(), spearDamage, _player.enemyLayer, _player.bloodPuddleMaker);
         }
     }
 }

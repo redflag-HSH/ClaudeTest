@@ -41,7 +41,7 @@ public class DialogIlust : MonoBehaviour
             if (leftSpeaking && line.portrait != null)
                 portraitLeft.sprite = line.portrait;
 
-            if (!leftHasSpoken)
+            if (!leftHasSpoken || (leftSpeaking && line.portrait == null))
                 SetAlpha(portraitLeft, 0f);
             else
                 SetAlpha(portraitLeft, leftSpeaking ? 1f : dimmedAlpha);
@@ -52,7 +52,7 @@ public class DialogIlust : MonoBehaviour
             if (!leftSpeaking && line.portrait != null)
                 portraitRight.sprite = line.portrait;
 
-            if (!rightHasSpoken)
+            if (!rightHasSpoken || (!leftSpeaking && line.portrait == null))
                 SetAlpha(portraitRight, 0f);
             else
                 SetAlpha(portraitRight, leftSpeaking ? dimmedAlpha : 1f);

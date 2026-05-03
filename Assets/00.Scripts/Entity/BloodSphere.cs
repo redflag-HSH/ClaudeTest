@@ -5,6 +5,8 @@ public class BloodSphere : MonoBehaviour
 {
     [SerializeField] private float _gatherRadius = 5f;
     public int bloodCount = 0;
+    public int moneyValue = 0;
+    public float hpHeal = 0f;
     private int _pondCount = 0, _absorbedCount = 0;
     void Start()
     {
@@ -26,6 +28,8 @@ public class BloodSphere : MonoBehaviour
             if (player != null)
             {
                 player.AddBloodGage(bloodCount);
+                player.AddBloodMoney(moneyValue);
+                if (hpHeal > 0f) player.Heal(hpHeal);
             }
             Destroy(gameObject);
         }
@@ -39,6 +43,8 @@ public class BloodSphere : MonoBehaviour
             if (bloodPond != null)
             {
                 bloodCount += bloodPond.GetCount();
+                moneyValue += bloodPond.moneyValue;
+                hpHeal += bloodPond.hpHeal;
                 bloodPond.TriggerMovement(transform.position);
                 _pondCount++;
                 bloodPond.onComplete += () => _absorbedCount++;
@@ -46,7 +52,7 @@ public class BloodSphere : MonoBehaviour
         }
         if (bloodCount == 0)
         {
-            // ÁÖº¯¿¡ Ç÷±¸°¡ ¾øÀ» ¶§ÀÇ Ã³¸® (¿¹: Ç÷±¸°¡ ¾ø´Ù´Â ¸Þ½ÃÁö¸¦ Ãâ·ÂÇÏ°Å³ª, Ç÷±¸°¡ ¾øÀ½À» ³ªÅ¸³»´Â È¿°ú¸¦ ¹ßµ¿)
+            // ï¿½Öºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ (ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ù´ï¿½ ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï°Å³ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ï¿½ï¿½ ï¿½ßµï¿½)
             Debug.Log("No blood ponds found within the gather radius.");
             Destroy(gameObject);
         }

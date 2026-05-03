@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
@@ -37,6 +38,8 @@ public class Bonfire : MonoBehaviour, IInteractable
     // ──────────────────────────────────────────────────────────────
     //  State
     // ──────────────────────────────────────────────────────────────
+
+    public static event Action OnAnyBonfireRest;
 
     public bool IsLit { get; private set; }
 
@@ -100,6 +103,7 @@ public class Bonfire : MonoBehaviour, IInteractable
         isResting = false;
 
         onRest?.Invoke();
+        OnAnyBonfireRest?.Invoke();
     }
 
     private void HealPlayer(PlayerControl player)

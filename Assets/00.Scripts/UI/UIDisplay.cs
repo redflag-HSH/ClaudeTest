@@ -137,10 +137,10 @@ public class UIDisplay : MonoBehaviour
         if (index == 0) RefreshDisplay();
     }
 
-    public void OpenInventory() => OpenMenuAtIndex(0);
+    public void OpenInventory()  => OpenMenuAtIndex(0);
     public void OpenSkillPanel() => OpenMenuAtIndex(1);
-    public void OpenOptionPanel() => OpenMenuAtIndex(2);
-    public void OpenQuitPanel() => OpenMenuAtIndex(3);
+    public void OpenOptionPanel()=> OpenMenuAtIndex(2);
+    public void OpenQuitPanel()  => OpenMenuAtIndex(3);
 
     void OpenMenuAtIndex(int index)
     {
@@ -168,9 +168,9 @@ public class UIDisplay : MonoBehaviour
     public void CloseAllPanels()
     {
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
-        if (skillPanel != null) skillPanel.SetActive(false);
-        if (optionPanel != null) optionPanel.SetActive(false);
-        if (quitPanel != null) quitPanel.SetActive(false);
+        if (skillPanel != null)     skillPanel.SetActive(false);
+        if (optionPanel != null)    optionPanel.SetActive(false);
+        if (quitPanel != null)      quitPanel.SetActive(false);
     }
 
     // ── Inventory Display ─────────────────────────────────────────────────────

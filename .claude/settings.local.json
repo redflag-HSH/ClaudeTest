@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($desktop = [System.Environment]::GetFolderPath\\(\"Desktop\"\\); Test-Path \\(Join-Path $desktop \"TechSpec_ClaudeTest.docx\"\\); Get-Item \\(Join-Path $desktop \"TechSpec_ClaudeTest.docx\"\\) -ErrorAction SilentlyContinue | Select-Object Name, Length, LastWriteTime)",
+      "PowerShell(python -c \"import docx; print\\('ok'\\)\" 2>&1)",
+      "PowerShell(pip install python-docx --quiet 2>&1)",
+      "PowerShell(python \"C:\\\\Users\\\\MS\\\\ClaudeTest\\\\gen_spec.py\")",
+      "PowerShell(Get-Item \"C:\\\\Users\\\\MS\\\\Desktop\\\\TechSpec_ClaudeTest.docx\" | Select-Object Name, @{n=\"SizeKB\";e={[math]::Round\\($_.Length/1KB,1\\)}}, LastWriteTime)"
+    ]
+  }
+}

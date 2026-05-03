@@ -105,6 +105,8 @@ MonoBehaviour:
   fadeDuration: 0.4
   trailObject: {fileID: 4397131055047592579}
   count: 1
+  moneyValue: 10
+  hpHeal: 5
 --- !u!58 &-9147126225630831916
 CircleCollider2D:
   m_ObjectHideFlags: 0

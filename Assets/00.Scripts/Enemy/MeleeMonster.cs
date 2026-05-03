@@ -54,7 +54,7 @@ public class MeleeMonster : EnemySliceable, IDamageable
 
     // ── Unity ────────────────────────────────────────────────────────────────
 
-    void Awake()
+    protected override void Awake()
     {
         base.Awake();
         rb = GetComponent<Rigidbody2D>();

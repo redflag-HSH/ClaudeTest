@@ -22,14 +22,16 @@ public class BloodSpear : MonoBehaviour
     private Vector2 _hoverOffset;
     private Vector2 _facingDir;
     private Rigidbody2D _rb;
+    private BloodPuddleMaker _puddleMaker;
 
-    public void Init(Transform player, Vector2 hoverOffset, int facingDir, float dmg, LayerMask layer)
+    public void Init(Transform player, Vector2 hoverOffset, int facingDir, float dmg, LayerMask layer, BloodPuddleMaker puddleMaker = null)
     {
         _player = player;
         _hoverOffset = hoverOffset;
         _facingDir = new Vector2(facingDir, 0f);
         damage = dmg;
         enemyLayer = layer;
+        _puddleMaker = puddleMaker;
 
         _rb = GetComponent<Rigidbody2D>();
         _rb.gravityScale = 0f;
@@ -103,6 +105,7 @@ public class BloodSpear : MonoBehaviour
         if (((1 << collision.gameObject.layer) & enemyLayer) == 0) return;
         if (collision.TryGetComponent<IDamageable>(out var target))
             target.TakeDamage(damage);
+        if (_puddleMaker != null) _puddleMaker.SpawnPuddle(transform.position);
         Destroy(gameObject);
     }
 }

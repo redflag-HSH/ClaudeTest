@@ -10,11 +10,21 @@ public class BloodPond : MonoBehaviour
     public GameObject trailObject;
 
     [SerializeField] private int count = 1;
+    [SerializeField] public int moneyValue = 10;
+    public float hpHeal = 0f;
     private bool isTriggered = false;
     Vector2 targetPosition;
     SpriteRenderer sr;
-
     void Awake() => sr = GetComponent<SpriteRenderer>();
+
+    private void OnEnable()  => Bonfire.OnAnyBonfireRest += OnBonfireRest;
+    private void OnDisable() => Bonfire.OnAnyBonfireRest -= OnBonfireRest;
+
+    private void OnBonfireRest()
+    {
+        if (onComplete != null) onComplete();
+        else gameObject.SetActive(false);
+    }
 
     void Update()
     {
@@ -28,6 +38,8 @@ public class BloodPond : MonoBehaviour
     {
         isTriggered = false;
         count = 1;
+        moneyValue = 0;
+        hpHeal = 0f;
         if (trailObject != null) trailObject.SetActive(false);
         if (sr != null) { Color c = sr.color; c.a = 1f; sr.color = c; }
     }

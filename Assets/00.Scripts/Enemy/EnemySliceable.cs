@@ -24,7 +24,7 @@ public class EnemySliceable : MonoBehaviour
 
     [Header("Physics")]
     public float halfBounciness = 0.3f;
-    public float halfFriction   = 0.2f;
+    public float halfFriction = 0.2f;
 
     [Header("Optimization")]
     [Tooltip("Max sliced halves alive at once across the whole scene. Oldest are removed first.")]
@@ -40,6 +40,11 @@ public class EnemySliceable : MonoBehaviour
     // destroyOnSlice = false so you can handle respawn logic yourself.
     public System.Action onSliced;
 
+    [SerializeField] private int money = 10;
+    public int Money => money;
+    [SerializeField] private float hpHeal = 0f;
+    public float HpHeal => hpHeal;
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     // Each slice pair gets a unique sorting order so SpriteMasks only affect
@@ -50,7 +55,7 @@ public class EnemySliceable : MonoBehaviour
     protected SpriteRenderer sr;
     PhysicsMaterial2D _halfPhysMat;
 
-    protected void Awake()
+    protected virtual void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         _halfPhysMat = new PhysicsMaterial2D("SlicedHalfMat")
@@ -140,21 +145,21 @@ public class EnemySliceable : MonoBehaviour
         var root = new GameObject("SpawnedWhole");
         root.transform.position = transform.position;
         root.transform.rotation = transform.rotation;
-        root.gameObject.layer   = LayerMask.NameToLayer(layerName);
+        root.gameObject.layer = LayerMask.NameToLayer(layerName);
 
         var sg = root.AddComponent<UnityEngine.Rendering.SortingGroup>();
         sg.sortingLayerID = sr.sortingLayerID;
-        sg.sortingOrder   = order;
+        sg.sortingOrder = order;
 
         var rb = root.AddComponent<Rigidbody2D>();
-        rb.gravityScale    = halfGravityScale;
-        rb.freezeRotation  = false;
+        rb.gravityScale = halfGravityScale;
+        rb.freezeRotation = false;
         rb.angularVelocity = halfSpin * (Random.value > 0.5f ? 1 : -1);
-        rb.linearVelocity  = launchVelocity ?? new Vector2(0f, halfSeparationForce);
+        rb.linearVelocity = launchVelocity ?? new Vector2(0f, halfSeparationForce);
 
         var col = root.AddComponent<BoxCollider2D>();
-        col.size            = bounds.size;
-        col.sharedMaterial  = _halfPhysMat;
+        col.size = bounds.size;
+        col.sharedMaterial = _halfPhysMat;
 
         // ── Sprite child — no mask needed, full sprite visible ────────────────
         var spriteObj = new GameObject("Sprite");
@@ -163,9 +168,9 @@ public class EnemySliceable : MonoBehaviour
 
         var wholeSr = spriteObj.AddComponent<SpriteRenderer>();
         wholeSr.sprite = sr.sprite;
-        wholeSr.color  = sr.color;
-        wholeSr.flipX  = sr.flipX;
-        wholeSr.flipY  = sr.flipY;
+        wholeSr.color = sr.color;
+        wholeSr.flipX = sr.flipX;
+        wholeSr.flipY = sr.flipY;
 
         // ── Fade & self-destruct — same as SpawnHalf ──────────────────────────
         root.AddComponent<SlicedHalf>().Init(wholeSr, halfLifetime);

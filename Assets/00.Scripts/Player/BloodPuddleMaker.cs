@@ -38,17 +38,23 @@ public class BloodPuddleMaker : MonoBehaviour
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public void SpawnPuddle(Vector2 position) => Spawn(position, _pools, 1f);
-    public void SpawnStrongPuddle(Vector2 position) => Spawn(position, _strongPools, 1f);
+    public void SpawnPuddle(Vector2 position, int moneyValue = 0, float hpHeal = 0f) => Spawn(position, _pools, 1f, moneyValue, hpHeal);
+    public void SpawnStrongPuddle(Vector2 position, int moneyValue = 0, float hpHeal = 0f) => Spawn(position, _strongPools, 1f, moneyValue, hpHeal);
 
     // ── Internal ──────────────────────────────────────────────────────────────
 
-    void Spawn(Vector2 position, ObjectPool<GameObject>[] pools, float scaleMultiplier)
+    void Spawn(Vector2 position, ObjectPool<GameObject>[] pools, float scaleMultiplier, int moneyValue = 0, float hpHeal = 0f)
     {
         if (pools == null || pools.Length == 0) return;
 
         var pool = pools[Random.Range(0, pools.Length)];
         GameObject obj = pool.Get();
+
+        if (obj.TryGetComponent<BloodPond>(out var pond))
+        {
+            if (moneyValue > 0) pond.moneyValue = moneyValue;
+            if (hpHeal > 0f) pond.hpHeal = hpHeal;
+        }
 
         RaycastHit2D groundHit = Physics2D.Raycast(position, Vector2.down, groundRayLength, groundLayer);
         Vector2 spawnPos = groundHit.collider != null ? groundHit.point : position;

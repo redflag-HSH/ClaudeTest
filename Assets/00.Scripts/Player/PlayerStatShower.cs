@@ -36,6 +36,9 @@ public class PlayerStatShower : MonoBehaviour
     [SerializeField] private Slider bloodGageBar;
     [SerializeField] private TextMeshProUGUI bloodGageText;  // optional – shows "50 / 100"
 
+    [Header("Blood Money")]
+    [SerializeField] private TextMeshProUGUI bloodMoneyText;  // shows "NNN L"
+
     [Header("Low-Stat Flash")]
     [SerializeField, Range(0f, 1f)] private float lowHpThreshold = 0.22f;
     [SerializeField, Range(0f, 1f)] private float lowStaminaThreshold = 0.20f;
@@ -71,6 +74,9 @@ public class PlayerStatShower : MonoBehaviour
         UpdateText(hpText,        combat.CurrentHp,       combat.maxHp);
         UpdateText(staminaText,   combat.CurrentStamina,  combat.maxStamina);
         UpdateText(bloodGageText, combat.CurrentBloodGage, combat.maxBloodGage);
+
+        if (bloodMoneyText != null)
+            bloodMoneyText.text = $"{combat.CurrentBloodMoney} L";
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
