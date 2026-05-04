@@ -3,7 +3,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
-public class MeleeMonster : EnemySliceable, IDamageable
+public class MeleeMonsterSpecial : EnemySliceable, IDamageable
 {
     // ── State Machine ────────────────────────────────────────────────────────
 
@@ -209,8 +209,12 @@ public class MeleeMonster : EnemySliceable, IDamageable
         foreach (var col in hits)
         {
             if (col.TryGetComponent<IDamageable>(out var target))
-                target.TakeDamage(attackDamage);
-
+            {
+                if (player == col.transform)
+                    player.gameObject.GetComponent<PlayerControl>().TakeSpecialDamage(attackDamage);
+                else
+                    target.TakeDamage(attackDamage);
+            }
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
                 targetRb.AddForce(new Vector2(dir * knockbackForce, 2f), ForceMode2D.Impulse);
         }

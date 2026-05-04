@@ -66,6 +66,13 @@ public class SaveManager : MonoBehaviour
     }
 
     [Serializable]
+    public class QuestSaveData
+    {
+        public List<string> activeQuestIds    = new();
+        public List<string> completedQuestIds = new();
+    }
+
+    [Serializable]
     public class GameSaveData
     {
         public CheckpointData checkpoint = new();
@@ -73,6 +80,7 @@ public class SaveManager : MonoBehaviour
         public SessionData session = new();
         public List<string> litBonfires = new();
         public List<InventorySlotData> inventory = new();
+        public QuestSaveData quests = new();
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -187,6 +195,7 @@ public class SaveManager : MonoBehaviour
         RecordPlayerStats();
         RecordSession();
         RecordInventory();
+        RecordQuests();
         RecordLitBonfire(bonfire.BonfireId);
         WriteFile();
 
@@ -203,6 +212,7 @@ public class SaveManager : MonoBehaviour
         RecordPlayerStats();
         RecordSession();
         RecordInventory();
+        RecordQuests();
         WriteFile();
     }
 
@@ -244,6 +254,7 @@ public class SaveManager : MonoBehaviour
         player.AddBloodGage(Data.playerStats.currentBloodGage - player.CurrentBloodGage);
         player.SetBloodMoney(Data.playerStats.bloodMoney);
         ApplyInventory();
+        ApplyQuests();
     }
 
     /// <summary>Returns true if the bonfire with the given ID was lit in the save.</summary>
@@ -341,6 +352,28 @@ public class SaveManager : MonoBehaviour
                 quantity = slotData.quantity,
             });
         }
+    }
+
+    private void RecordQuests()
+    {
+        var qm = QuestManager.Instance;
+        if (qm == null) return;
+
+        Data.quests.activeQuestIds.Clear();
+        foreach (var q in qm.ActiveQuests)
+            Data.quests.activeQuestIds.Add(q.questId);
+
+        Data.quests.completedQuestIds.Clear();
+        foreach (var id in qm.CompletedQuestIds)
+            Data.quests.completedQuestIds.Add(id);
+    }
+
+    private void ApplyQuests()
+    {
+        var qm = QuestManager.Instance;
+        if (qm == null) return;
+
+        qm.LoadFromSave(Data.quests.activeQuestIds, Data.quests.completedQuestIds);
     }
 
     private void RecordLitBonfire(string bonfireId)

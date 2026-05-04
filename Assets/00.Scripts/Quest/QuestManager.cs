@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class QuestManager : MonoBehaviour
 {
+    // ── Singleton ─────────────────────────────────────────────────────────────
+
     public static QuestManager Instance { get; private set; }
 
     void Awake()
@@ -18,13 +20,26 @@ public class QuestManager : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
+    // ── Inspector ─────────────────────────────────────────────────────────────
+
+    [Tooltip("All QuestData assets in the project. Required for save/load lookup.")]
+    [SerializeField] QuestData[] _registry;
+
+    // ── Events ────────────────────────────────────────────────────────────────
+
     public static event Action OnQuestsChanged;
 
-    private readonly List<QuestData> _active = new();
-    private readonly HashSet<string> _completed = new();
+    // ── State ─────────────────────────────────────────────────────────────────
 
-    public IReadOnlyList<QuestData> ActiveQuests => _active;
+    readonly List<QuestData> _active    = new();
+    readonly HashSet<string> _completed = new();
 
+    public IReadOnlyList<QuestData> ActiveQuests     => _active;
+    public IEnumerable<string>      CompletedQuestIds => _completed;
+
+    // ── Public API ────────────────────────────────────────────────────────────
+
+    public bool IsActive(QuestData quest)    => _active.Contains(quest);
     public bool IsCompleted(QuestData quest) => _completed.Contains(quest.questId);
 
     public void AddQuest(QuestData quest)
@@ -37,6 +52,7 @@ public class QuestManager : MonoBehaviour
     public void CompleteQuest(QuestData quest)
     {
         if (quest == null) return;
+        _active.Remove(quest);
         _completed.Add(quest.questId);
         OnQuestsChanged?.Invoke();
     }
@@ -46,8 +62,34 @@ public class QuestManager : MonoBehaviour
         if (_active.Remove(quest))
             OnQuestsChanged?.Invoke();
     }
-    public bool IsActive(QuestData quest)
+
+    // ── Save / Load ───────────────────────────────────────────────────────────
+
+    public void LoadFromSave(List<string> activeIds, List<string> completedIds)
     {
-        return _active.Contains(quest);
+        _active.Clear();
+        _completed.Clear();
+
+        foreach (var id in completedIds)
+            _completed.Add(id);
+
+        foreach (var id in activeIds)
+        {
+            var quest = FindById(id);
+            if (quest != null) _active.Add(quest);
+            else Debug.LogWarning($"[QuestManager] No quest found for id '{id}' — skipped.");
+        }
+
+        OnQuestsChanged?.Invoke();
+    }
+
+    // ── Internal ──────────────────────────────────────────────────────────────
+
+    QuestData FindById(string id)
+    {
+        if (_registry == null) return null;
+        foreach (var q in _registry)
+            if (q != null && q.questId == id) return q;
+        return null;
     }
 }

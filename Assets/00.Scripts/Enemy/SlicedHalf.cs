@@ -7,6 +7,42 @@ public class SlicedHalf : MonoBehaviour
     // Scene-wide cap set by EnemySliceable.maxActiveHalves
     public static int MaxActive = 12;
 
+    [Header("Hit")]
+    public float damage = 20f;
+    public LayerMask enemyLayer;
+    public LayerMask groundLayer;
+    [Tooltip("Layer the hitbox child sits on — must interact with enemy and ground layers in Physics 2D settings.")]
+    public int hitboxLayer = 0;
+    public float hitboxRadius = 0.3f;
+
+    bool _hasHit;
+    GameObject _hitboxObj;
+
+    void Awake()
+    {
+        if (PlayerControl.Instance != null)
+        {
+            enemyLayer  = PlayerControl.Instance.enemyLayer;
+            groundLayer = PlayerControl.Instance.groundLayer;
+        }
+
+        _hitboxObj = new GameObject("SliceHitbox");
+        _hitboxObj.transform.SetParent(transform, false);
+        _hitboxObj.layer = hitboxLayer;
+
+        var col = _hitboxObj.AddComponent<CircleCollider2D>();
+        col.isTrigger = true;
+        col.radius = hitboxRadius;
+
+        _hitboxObj.AddComponent<SlicedHalfHitbox>();
+    }
+
+    void DisableHitbox()
+    {
+        _hasHit = true;
+        if (_hitboxObj != null) _hitboxObj.SetActive(false);
+    }
+
     static readonly List<SlicedHalf> s_active = new List<SlicedHalf>();
 
     public void Init(SpriteRenderer pieceRenderer, float lifetime)
@@ -31,6 +67,23 @@ public class SlicedHalf : MonoBehaviour
     }
 
     void OnDestroy() => s_active.Remove(this);
+
+    // Called by SlicedHalfHitbox child when its trigger overlaps something
+    public void OnHitGround()
+    {
+        DisableHitbox();
+    }
+
+    public void OnHitEnemy(Collider2D col)
+    {
+        if (_hasHit) return;
+        if ((enemyLayer.value & (1 << col.gameObject.layer)) == 0) return;
+
+        if (col.TryGetComponent<IDamageable>(out var target))
+            target.TakeDamage(damage);
+
+        DisableHitbox();
+    }
 
     IEnumerator FadeAndDestroy(SpriteRenderer pieceRenderer, float lifetime)
     {

@@ -6,6 +6,12 @@ using UnityEngine.Pool;
 [RequireComponent(typeof(PlayerControl))]
 public class EffectGenerator : MonoBehaviour
 {
+    [Header("Sliced Limbs")]
+    public GameObject slicedLeftArmPrefab;
+    public GameObject slicedRightArmPrefab;
+    public GameObject slicedLeftLegPrefab;
+    public GameObject slicedRightLegPrefab;
+
     [Header("Blood")]
     public GameObject bloodPrefab;
     [Tooltip("Max blood objects kept alive in the pool.")]
@@ -76,6 +82,25 @@ public class EffectGenerator : MonoBehaviour
     {
         _psCache.Remove(obj);
         Destroy(obj);
+    }
+
+    // ── Return logic ──────────────────────────────────────────────────────────
+
+    // ── Sliced Limbs ──────────────────────────────────────────────────────────
+
+    public void SpawnSlicedLimb(BodyPart part, Vector2 position)
+    {
+        GameObject prefab = part switch
+        {
+            BodyPart.LeftArm  => slicedLeftArmPrefab,
+            BodyPart.RightArm => slicedRightArmPrefab,
+            BodyPart.LeftLeg  => slicedLeftLegPrefab,
+            BodyPart.RightLeg => slicedRightLegPrefab,
+            _                 => null
+        };
+
+        if (prefab == null) return;
+        Instantiate(prefab, position, Quaternion.identity);
     }
 
     // ── Return logic ──────────────────────────────────────────────────────────
