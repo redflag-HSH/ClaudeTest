@@ -239,15 +239,32 @@ MonoBehaviour:
     stunMultiplier: 0
   headFadeDuration: 0.5
   stunDuration: 0.6
-  hpDrainPerSecond: 2
+  hpDrainPerSecond: 1.5
   hpDrainFloor: 1
-  lightDamage: 15
   lightStaminaCost: 12
-  lightRange: 1
-  lightKnockback: 3
-  lightSliceForcePower: 10
   comboWindowDuration: 0.5
-  maxComboSteps: 3
+  comboStrongMultiplier: 1.5
+  comboHits:
+  - damage: 10
+    range: 1
+    knockback: 3
+    startup: 0.08
+    chainGap: 0.08
+    recovery: 0.15
+  - damage: 15
+    range: 1.1
+    knockback: 4
+    startup: 0.1
+    chainGap: 0.1
+    recovery: 0.18
+  - damage: 20
+    range: 1.2
+    knockback: 5
+    startup: 0.12
+    chainGap: 0.12
+    recovery: 0.25
+  runSpeedMultiplier: 1.6
+  runHoldTime: 0.3
   heavyDamage: 40
   heavyStaminaCost: 24
   heavyRange: 1.3
@@ -259,6 +276,9 @@ MonoBehaviour:
   deathblowRange: 2
   deathblowBloodGain: 50
   deathblowSliceForce: 10
+  quickdrawRange: 6
+  quickdrawDamage: 30
+  quickdrawStaminaCost: 30
   climbSpeed: 3
   dodgeForce: 10
   dodgeStaminaCost: 25

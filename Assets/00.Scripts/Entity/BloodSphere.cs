@@ -1,8 +1,11 @@
+using System.Collections;
 using System.Linq;
 using UnityEngine;
 
 public class BloodSphere : MonoBehaviour
 {
+    [SerializeField] private float _expectedMoveSpeed = 2f;
+
     [SerializeField] private float _gatherRadius = 5f;
     public int bloodCount = 0;
     public int moneyValue = 0;
@@ -31,12 +34,14 @@ public class BloodSphere : MonoBehaviour
                 player.AddBloodMoney(moneyValue);
                 if (hpHeal > 0f) player.Heal(hpHeal);
             }
+            StopAllCoroutines();
             Destroy(gameObject);
         }
     }
     private void GatherBloodPonds()
     {
         Collider2D[] ponds = Physics2D.OverlapCircleAll(transform.position, _gatherRadius);
+        float distanceToPond = 0f;
         foreach (Collider2D pond in ponds)
         {
             BloodPond bloodPond = pond.GetComponent<BloodPond>();
@@ -48,12 +53,22 @@ public class BloodSphere : MonoBehaviour
                 bloodPond.TriggerMovement(transform.position);
                 _pondCount++;
                 bloodPond.onComplete += () => _absorbedCount++;
+
+                distanceToPond = Mathf.Max(distanceToPond, Vector2.Distance(transform.position, pond.transform.position));
             }
         }
+
         if (bloodCount == 0)
         {
             Debug.Log("No blood ponds found within the gather radius.");
             Destroy(gameObject);
         }
+        else
+            StartCoroutine(FallBackWait(distanceToPond / _expectedMoveSpeed));
+    }
+    IEnumerator FallBackWait(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        _absorbedCount = _pondCount;
     }
 }

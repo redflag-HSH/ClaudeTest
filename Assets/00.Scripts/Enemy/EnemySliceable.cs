@@ -96,7 +96,7 @@ public class EnemySliceable : MonoBehaviour
         SpawnHalf(maskSprite, sliceNormal, +1, cp, sliceForcePower, playerPos);
         SpawnHalf(maskSprite, sliceNormal, -1, cp, sliceForcePower, playerPos);
 
-        HitStop.Instance.DoHitStop(0.08f);  // brief freeze for impact feel
+        GameManager.Instance.DoHitStop(0.08f);  // brief freeze for impact feel
 
         if (destroyOnSlice)
         {

@@ -5,6 +5,17 @@ using UnityEngine.InputSystem;
 public enum BodyPart { Head, LeftArm, RightArm, LeftLeg, RightLeg, Torso }
 
 [System.Serializable]
+public struct ComboHit
+{
+    public float damage;
+    public float range;
+    public float knockback;
+    public float startup;    // seconds before weak hit fires
+    public float chainGap;   // seconds between weak and strong hit
+    public float recovery;   // seconds after strong hit (next combo window opens)
+}
+
+[System.Serializable]
 public struct BodyPartDebuff
 {
     [Range(0f, 1f)] public float speedMultiplier;       // movement speed scale
@@ -122,14 +133,13 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     // ���� Light Attack ��������������������������������������������������������������������������������������������������������������������
 
-    [Header("Light Attack")]
-    public float lightDamage = 15f;
+    [Header("Combo")]
     public float lightStaminaCost = 20f;
-    public float lightRange = 1.0f;
-    public float lightKnockback = 3f;
-    public float lightSliceForcePower = 4f;
     public float comboWindowDuration = 0.5f;
-    public int maxComboSteps = 3;
+    [Tooltip("Strong hit damage = weak hit damage × this multiplier.")]
+    public float comboStrongMultiplier = 1.5f;
+    [Tooltip("Each entry is one combo step — each step fires weak then strong.")]
+    public ComboHit[] comboHits = new ComboHit[3];
 
     // ── Run ───────────────────────────────────────────────────────────────────
 
@@ -172,6 +182,54 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float quickdrawRange = 6f;
     public float quickdrawDamage = 30f;
     public float quickdrawStaminaCost = 30f;
+    public float quickdrawCooldown = 1.0f;
+
+    // ── Smashdown ─────────────────────────────────────────────────────────────
+
+    [Header("Smashdown")]
+    public float smashdownDamage = 25f;
+    public float smashdownRange = 0.9f;
+    public float smashdownKnockback = 6f;
+    public float smashdownStaminaCost = 20f;
+    public float smashdownStartup = 0.1f;
+    public float smashdownRecovery = 0.35f;
+    public float smashdownCooldown = 1.0f;
+
+    // ── Body Slam ─────────────────────────────────────────────────────────────
+
+    [Header("Body Slam")]
+    public float bodySlamStaminaCost = 30f;
+    public float bodySlamSlipSpeed = 10f;
+    public float bodySlamDuration = 0.45f;
+    public float bodySlamHitRadius = 0.55f;
+    public float bodySlamDamage = 20f;
+    public float bodySlamKnockback = 8f;
+    public float bodySlamSelfDamage = 10f;
+    public float bodySlamSelfKnockback = 12f;
+    public float bodySlamCooldown = 1.5f;
+
+    // ── Grab Throw ────────────────────────────────────────────────────────────
+
+    [Header("Grab Throw")]
+    public float grabThrowStaminaCost = 30f;
+    public float grabThrowCooldown = 1.0f;
+
+    // ── Berserker Mode ────────────────────────────────────────────────────────
+
+    [Header("Berserker Mode")]
+    public float berserkerDuration = 10f;
+    [Tooltip("Seconds of holding Gather button to activate manually.")]
+    public float berserkerHoldTime = 1.0f;
+
+    // ── Rising Attack ─────────────────────────────────────────────────────────
+
+    [Header("Rising Attack")]
+    public float risingDamage = 20f;
+    public float risingRange = 1.0f;
+    public float risingKnockback = 12f;
+    public float risingStaminaCost = 20f;
+    public float risingStartup = 0.08f;
+    public float risingRecovery = 0.3f;
 
     // ���� Ladder ��������������������������������������������������������������������������������������������������������������������������������
 
@@ -200,7 +258,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float sliceDamage = 999f;
     public float sliceCooldown = 0.6f;
     public float sliceStaminaCost = 30f;
-    public float sliceForcePower = 6f;
+    public float sliceForce;  // multiplied by damage to get actual slice force
 
     [Header("Slash Visual")]
     public Color slashColor = new Color(1f, 1f, 0.3f, 0.85f);
@@ -225,6 +283,18 @@ public class PlayerControl : MonoBehaviour, IDamageable
     bool isParryActive;
     bool isAttacking;
     bool isDodging;
+    bool isSlamming;
+
+    public bool IsBerserker { get; private set; }
+    float _berserkerTimer;
+    bool _hpBerserkerTriggered;
+    bool _gatherHeld;
+    float _gatherHoldTimer;
+
+    float _quickdrawCooldownTimer;
+    float _smashdownCooldownTimer;
+    float _bodySlamCooldownTimer;
+    float _grabThrowCooldownTimer;
 
     int comboStep;
     float comboTimer;
@@ -242,7 +312,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
     bool isNearLadder;
     bool isOnLadder;
 
-    float nextSliceTime;
     LineRenderer slashLine;
 
     Rigidbody2D rb;
@@ -288,9 +357,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Dodge.canceled += OnDodgeRelease;
         actions.Player2D.Guard.performed += OnGuardStart;
         actions.Player2D.Guard.canceled += OnGuardEnd;
-        actions.Player2D.Parry.performed += OnParry;
+        actions.Player2D.Gather.started += OnGatherDown;
         actions.Player2D.Gather.performed += OnGather;
-        actions.Player2D.Skill.performed += OnSkill;
+        actions.Player2D.Gather.canceled += OnGatherUp;
+        actions.Player2D.Skill.started += OnSkillPress;
+        actions.Player2D.Skill.canceled += OnSkillRelease;
+        actions.Player2D.GrabThrow.performed += OnGrabThrow;
         actions.Player2D.Enable();
     }
 
@@ -305,9 +377,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Dodge.canceled -= OnDodgeRelease;
         actions.Player2D.Guard.performed -= OnGuardStart;
         actions.Player2D.Guard.canceled -= OnGuardEnd;
-        actions.Player2D.Parry.performed -= OnParry;
+        actions.Player2D.Gather.started -= OnGatherDown;
         actions.Player2D.Gather.performed -= OnGather;
-        actions.Player2D.Skill.performed -= OnSkill;
+        actions.Player2D.Gather.canceled -= OnGatherUp;
+        actions.Player2D.Skill.started -= OnSkillPress;
+        actions.Player2D.Skill.canceled -= OnSkillRelease;
+        actions.Player2D.GrabThrow.performed -= OnGrabThrow;
         actions.Player2D.Disable();
     }
 
@@ -322,12 +397,14 @@ public class PlayerControl : MonoBehaviour, IDamageable
         TickStaminaRegen();
         TickHpDrain();
         TickRun();
+        TickBerserker();
+        TickSkillCooldowns();
         CheckSlope();
     }
 
     void FixedUpdate()
     {
-        if (isDodging) return;
+        if (isDodging || isSlamming) return;
 
         if (isNearLadder && !isOnLadder && climbInput != 0f && !AllLimbsCut)
             EnterLadder();
@@ -386,10 +463,14 @@ public class PlayerControl : MonoBehaviour, IDamageable
     void OnMove(InputAction.CallbackContext ctx)
     {
         Vector2 input = ctx.ReadValue<Vector2>();
+        float prevClimbInput = climbInput;
         moveInput = input.x;
         climbInput = input.y;
         if (moveInput != 0f)
             lastFacingDir = (int)Mathf.Sign(moveInput);
+
+        if (_isRunning && climbInput > 0.5f && prevClimbInput <= 0.5f && !isDodging && !IsGuarding && !IsStunned)
+            BodySlamSkill();
     }
 
     void OnJump(InputAction.CallbackContext ctx)
@@ -407,22 +488,34 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnAttack(InputAction.CallbackContext ctx)
     {
-        if (isDodging || IsGuarding || isAttacking || IsStunned) return;
+        if (isDodging || IsGuarding || IsStunned) return;
 
-        if (_isRunning)
-        {
-            QuickdrawSkill();
-            return;
-        }
+        if (_isRunning) { QuickdrawSkill(); return; }
+
+        if (climbInput > 0.5f && CanWeakAttack) { RisingAttackSkill(); return; }
+        if (climbInput < -0.5f && CanWeakAttack && !IsGrounded()) { SmashdownSkill(); return; }
+
+        // Queue next combo hit while an attack is already running
+        if (isAttacking) { comboInputQueued = true; return; }
 
         bool doWeak = CanWeakAttack;
         bool doStrong = CanStrongAttack;
         if (!doWeak && !doStrong) return;
 
-        float cost = (doWeak ? lightStaminaCost : 0f) + (doStrong ? heavyStaminaCost : 0f);
-        if (!SpendStamina(cost)) return;
-
-        StartCoroutine(ChainAttackCoroutine(doWeak, doStrong));
+        // Both arms — combo (each step = weak → strong)
+        if (doWeak && doStrong)
+        {
+            if (!SpendStamina(lightStaminaCost + heavyStaminaCost)) return;
+            comboStep = 0;
+            StartCoroutine(ComboCoroutine());
+        }
+        else
+        {
+            // One arm cut — fall back to single chain
+            float cost = (doWeak ? lightStaminaCost : 0f) + (doStrong ? heavyStaminaCost : 0f);
+            if (!SpendStamina(cost)) return;
+            StartCoroutine(ChainAttackCoroutine(doWeak, doStrong));
+        }
     }
 
 
@@ -461,32 +554,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         IsGuarding = false;
         isParryActive = false;
-    }
-
-    void OnParry(InputAction.CallbackContext ctx)
-    {
-        if (isDodging || isAttacking || IsGuarding) return;
-        if (!SpendStamina(parryStaminaCost)) return;
-        StartCoroutine(ParryCoroutine());
-    }
-
-    IEnumerator ParryCoroutine()
-    {
-        IsGuarding = true;
-        isParryActive = true;
-        yield return new WaitForSeconds(parryWindowDuration);
-        isParryActive = false;
-        IsGuarding = false;
-    }
-
-    // Call this from code or bind to an input action to trigger a standalone slice.
-    void OnSlice()
-    {
-        if (isDodging || IsGuarding || Time.time < nextSliceTime) return;
-        if (!SpendStamina(sliceStaminaCost)) return;
-
-        nextSliceTime = Time.time + sliceCooldown;
-        DoSlice(sliceForcePower);
     }
 
     void OnGather(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
@@ -534,9 +601,61 @@ public class PlayerControl : MonoBehaviour, IDamageable
         return true;
     }
 
-    void OnSkill(InputAction.CallbackContext ctx)
+    void OnSkillPress(InputAction.CallbackContext ctx) => playerSkill?.OnSkillPress();
+    void OnSkillRelease(InputAction.CallbackContext ctx) => playerSkill?.OnSkillRelease();
+
+    void OnGatherDown(InputAction.CallbackContext ctx) => _gatherHeld = true;
+    void OnGatherUp(InputAction.CallbackContext ctx) { _gatherHeld = false; _gatherHoldTimer = 0f; }
+
+    // ── Berserker Mode ────────────────────────────────────────────────────────
+
+    void TickBerserker()
     {
-        playerSkill?.UseSkill();
+        if (IsDead) return;
+
+        // HP condition: first time HP drops to 1
+        if (!IsBerserker && !_hpBerserkerTriggered && CurrentHp <= 1f)
+        {
+            _hpBerserkerTriggered = true;
+            ActivateBerserker();
+            return;
+        }
+
+        // Hold condition: hold Gather button for berserkerHoldTime
+        if (!IsBerserker && _gatherHeld)
+        {
+            _gatherHoldTimer += Time.deltaTime;
+            if (_gatherHoldTimer >= berserkerHoldTime)
+            {
+                _gatherHoldTimer = 0f;
+                ActivateBerserker();
+            }
+        }
+
+        // Countdown while active
+        if (IsBerserker)
+        {
+            CurrentStamina = maxStamina;
+            _berserkerTimer -= Time.deltaTime;
+            if (_berserkerTimer <= 0f)
+                DeactivateBerserker();
+        }
+    }
+
+    void ActivateBerserker()
+    {
+        IsBerserker = true;
+        _berserkerTimer = berserkerDuration;
+        RestoreAllLimbs();
+    }
+
+    void DeactivateBerserker()
+    {
+        IsBerserker = false;
+        CurrentHp = 1f;
+        CurrentStamina = 0f;
+        CurrentBloodGage = 0f;
+        // effects added later
     }
 
     //���� Slice ����������������������������������������������������������������������������������������������������������������������������������
@@ -564,10 +683,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
             {
                 SpawnBlood(hit.point, hit.normal, sliceable.Money / 10, sliceable.HpHeal / 10f);
 
-                if (hit.collider.TryGetComponent<IDamageable>(out var d))
+                bool alreadyDead = hit.collider.TryGetComponent<IDamageable>(out var preCheck) && preCheck.IsDead;
+                if (!alreadyDead && hit.collider.TryGetComponent<IDamageable>(out var d))
                     d.TakeDamage(sliceDamage);
 
-                bool isDead = !hit.collider.TryGetComponent<IDamageable>(out var m) || m.IsDead;
+                bool isDead = alreadyDead || !hit.collider.TryGetComponent<IDamageable>(out var m) || m.IsDead;
                 if (isDead)
                 {
                     sliceable.Slice(sliceNormal, hit.point, forcePower, transform.position);
@@ -613,33 +733,37 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     // ���� Light Attack Combo ��������������������������������������������������������������������������������������������������������
 
-    IEnumerator LightAttackCoroutine()
+    IEnumerator ComboCoroutine()
     {
         isAttacking = true;
         comboInputQueued = false;
         float ad = AttackDelayMultiplier;
 
-        yield return new WaitForSeconds(0.08f * ad);
+        var hit = comboHits[comboStep];
 
-        int facingDir = FacingDir();
-        Vector2 hitOrigin = HitOrigin(lightRange);
-        float multiplier = 1f + comboStep * 0.2f;
+        // Weak hit
+        yield return new WaitForSeconds(hit.startup * ad);
+        HitEnemies(HitOrigin(hit.range), hit.range * 0.6f, hit.damage, hit.knockback, FacingDir(), bleedDps, bleedDuration);
+        DoSlice(hit.damage * sliceForce);
 
-        HitEnemies(hitOrigin, lightRange * 0.6f, lightDamage * multiplier, lightKnockback, facingDir, bleedDps, bleedDuration);
-        DoSlice(lightSliceForcePower);
+        // Strong hit
+        float strongDamage = hit.damage * comboStrongMultiplier;
+        yield return new WaitForSeconds(hit.chainGap * ad);
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, rb.linearVelocity.y);
+        HitEnemies(HitOrigin(heavyRange), heavyRange, strongDamage, heavyKnockback, FacingDir(), bleedDps, bleedDuration);
+        DoSlice(strongDamage * sliceForce);
 
-        yield return new WaitForSeconds(0.12f * ad);
+        yield return new WaitForSeconds(hit.recovery * ad);
 
         isAttacking = false;
 
-        if (comboInputQueued && comboStep < maxComboSteps - 1)
+        if (comboInputQueued && comboStep < comboHits.Length - 1)
         {
             comboStep++;
             comboTimer = comboWindowDuration;
             comboInputQueued = false;
-
-            if (SpendStamina(lightStaminaCost))
-                StartCoroutine(LightAttackCoroutine());
+            if (SpendStamina(lightStaminaCost + heavyStaminaCost))
+                StartCoroutine(ComboCoroutine());
         }
         else
         {
@@ -661,25 +785,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
     }
 
-    // ���� Heavy Attack ��������������������������������������������������������������������������������������������������������������������
-
-    IEnumerator HeavyAttackCoroutine()
-    {
-        isAttacking = true;
-        float ad = AttackDelayMultiplier;
-
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, rb.linearVelocity.y);
-        yield return new WaitForSeconds(heavyStartupDuration * ad);
-
-        HitEnemies(HitOrigin(heavyRange), heavyRange, heavyDamage, heavyKnockback, FacingDir(), bleedDps, bleedDuration);
-        DoSlice(heavySliceForcePower);
-
-        yield return new WaitForSeconds(0.2f * ad);
-
-        isAttacking = false;
-        comboStep = 0;
-    }
-
     // ── Chain Attack ──────────────────────────────────────────────────────────
 
     IEnumerator ChainAttackCoroutine(bool doWeak, bool doStrong)
@@ -689,10 +794,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         if (doWeak)
         {
-            yield return new WaitForSeconds(0.08f * ad);
-            HitEnemies(HitOrigin(lightRange), lightRange * 0.6f, lightDamage, lightKnockback, FacingDir(), bleedDps, bleedDuration);
-            DoSlice(lightSliceForcePower);
-            yield return new WaitForSeconds(0.12f * ad);
+            var h = comboHits.Length > 0 ? comboHits[0] : default;
+            yield return new WaitForSeconds(h.startup * ad);
+            HitEnemies(HitOrigin(h.range), h.range * 0.6f, h.damage, h.knockback, FacingDir(), bleedDps, bleedDuration);
+            DoSlice(h.damage * sliceForce);
+            yield return new WaitForSeconds(h.recovery * ad);
         }
 
         if (doStrong)
@@ -700,7 +806,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
             rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, rb.linearVelocity.y);
             yield return new WaitForSeconds(heavyStartupDuration * ad);
             HitEnemies(HitOrigin(heavyRange), heavyRange, heavyDamage, heavyKnockback, FacingDir(), bleedDps, bleedDuration);
-            DoSlice(heavySliceForcePower);
+            DoSlice(heavyDamage * sliceForce);
             yield return new WaitForSeconds(0.2f * ad);
         }
 
@@ -710,10 +816,21 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     static readonly WaitForSeconds s_quickdrawRecovery = new(0.15f);
 
-    // ── Quickdraw Skill ──────────────────────────────────────────────────────────
+    void TickSkillCooldowns()
+    {
+        float dt = Time.deltaTime;
+        if (_quickdrawCooldownTimer > 0f) _quickdrawCooldownTimer -= dt;
+        if (_smashdownCooldownTimer > 0f) _smashdownCooldownTimer -= dt;
+        if (_bodySlamCooldownTimer > 0f) _bodySlamCooldownTimer -= dt;
+        if (_grabThrowCooldownTimer > 0f) _grabThrowCooldownTimer -= dt;
+    }
+
+    // ── Quickdraw Skill ───────────────────────────────────────────────────────
     void QuickdrawSkill()
     {
+        if (_quickdrawCooldownTimer > 0f && !IsBerserker) return;
         if (!SpendStamina(quickdrawStaminaCost)) return;
+        if (!IsBerserker) _quickdrawCooldownTimer = quickdrawCooldown;
         StartCoroutine(QuickdrawCoroutine());
     }
 
@@ -723,26 +840,27 @@ public class PlayerControl : MonoBehaviour, IDamageable
         IsInvincible = true;
 
         Vector2 origin = transform.position;
-        Vector2 dir    = Vector2.right * FacingDir();
+        Vector2 dir = Vector2.right * FacingDir();
 
         // Stop at ground-layer walls
-        RaycastHit2D wallHit    = Physics2D.Raycast(origin, dir, quickdrawRange, groundLayer);
-        Vector2       destination = wallHit.collider != null
+        RaycastHit2D wallHit = Physics2D.Raycast(origin, dir, quickdrawRange, groundLayer);
+        Vector2 destination = wallHit.collider != null
             ? wallHit.point - dir * 0.15f
             : origin + dir * quickdrawRange;
 
         float dist = Vector2.Distance(origin, destination);
 
         // Slice every enemy along the path
-        RaycastHit2D[] hits       = Physics2D.RaycastAll(origin, dir, dist, enemyLayer);
-        Vector2        sliceNormal = new(-dir.y, dir.x);
+        RaycastHit2D[] hits = Physics2D.RaycastAll(origin, dir, dist, enemyLayer);
+        Vector2 sliceNormal = new(-dir.y, dir.x);
         foreach (var hit in hits)
         {
             SpawnBlood(hit.point, hit.normal);
             if (hit.collider.TryGetComponent<EnemySliceable>(out var sliceable))
             {
-                if (hit.collider.TryGetComponent<IDamageable>(out var d)) d.TakeDamage(quickdrawDamage);
-                bool isDead = hit.collider.TryGetComponent<IDamageable>(out var m) && m.IsDead;
+                bool alreadyDead = hit.collider.TryGetComponent<IDamageable>(out var preCheck) && preCheck.IsDead;
+                if (!alreadyDead && hit.collider.TryGetComponent<IDamageable>(out var d)) d.TakeDamage(quickdrawDamage);
+                bool isDead = alreadyDead || !hit.collider.TryGetComponent<IDamageable>(out var m) || m.IsDead;
                 if (isDead)
                 {
                     sliceable.Slice(sliceNormal, hit.point, deathblowSliceForce, transform.position);
@@ -760,7 +878,125 @@ public class PlayerControl : MonoBehaviour, IDamageable
         yield return s_quickdrawRecovery;
 
         IsInvincible = false;
-        isAttacking  = false;
+        isAttacking = false;
+    }
+
+    // ── Rising Attack Skill ───────────────────────────────────────────────────
+
+    void RisingAttackSkill()
+    {
+        if (!SpendStamina(risingStaminaCost)) return;
+        StartCoroutine(RisingAttackCoroutine());
+    }
+
+    IEnumerator RisingAttackCoroutine()
+    {
+        isAttacking = true;
+        float ad = AttackDelayMultiplier;
+
+        yield return new WaitForSeconds(risingStartup * ad);
+
+        Vector2 origin = (Vector2)transform.position + Vector2.up * 0.4f;
+        HitEnemies(origin, risingRange, risingDamage, new Vector2(FacingDir() * 2f, risingKnockback), bleedDps, bleedDuration);
+
+        yield return new WaitForSeconds(risingRecovery * ad);
+        isAttacking = false;
+    }
+
+    // ── Smashdown Skill ───────────────────────────────────────────────────────
+
+    void SmashdownSkill()
+    {
+        if (_smashdownCooldownTimer > 0f && !IsBerserker) return;
+        if (!SpendStamina(smashdownStaminaCost)) return;
+        if (!IsBerserker) _smashdownCooldownTimer = smashdownCooldown;
+        StartCoroutine(SmashdownCoroutine());
+    }
+
+    IEnumerator SmashdownCoroutine()
+    {
+        isAttacking = true;
+        float ad = AttackDelayMultiplier;
+
+        yield return new WaitForSeconds(smashdownStartup * ad);
+
+        Vector2 origin = (Vector2)transform.position + Vector2.down * 0.4f;
+        HitEnemies(origin, smashdownRange, smashdownDamage, smashdownKnockback, FacingDir(), bleedDps, bleedDuration);
+
+        yield return new WaitForSeconds(smashdownRecovery * ad);
+        isAttacking = false;
+    }
+
+    // ── Grab Throw Skill ──────────────────────────────────────────────────────
+
+    void OnGrabThrow(InputAction.CallbackContext ctx)
+    {
+        if (isDodging || IsGuarding || IsStunned) return;
+        GrabThrowSkill();
+    }
+
+    void GrabThrowSkill()
+    {
+        if (_grabThrowCooldownTimer > 0f && !IsBerserker) return;
+        if (!SpendStamina(grabThrowStaminaCost)) return;
+        if (!IsBerserker) _grabThrowCooldownTimer = grabThrowCooldown;
+        StartCoroutine(GrabThrowCoroutine());
+    }
+
+    IEnumerator GrabThrowCoroutine()
+    {
+        yield break;
+    }
+
+    // ── Body Slam Skill ───────────────────────────────────────────────────────
+
+    void BodySlamSkill()
+    {
+        if (_bodySlamCooldownTimer > 0f && !IsBerserker) return;
+        if (!SpendStamina(bodySlamStaminaCost)) return;
+        if (!IsBerserker) _bodySlamCooldownTimer = bodySlamCooldown;
+        StartCoroutine(BodySlamCoroutine());
+    }
+
+    IEnumerator BodySlamCoroutine()
+    {
+        _isRunning = false;
+        isAttacking = true;
+        isSlamming = true;
+
+        int dir = FacingDir();
+        float elapsed = 0f;
+        bool collided = false;
+
+        while (elapsed < bodySlamDuration && !collided)
+        {
+            rb.linearVelocity = new Vector2(dir * bodySlamSlipSpeed, rb.linearVelocity.y);
+
+            yield return new WaitForFixedUpdate();
+            elapsed += Time.fixedDeltaTime;
+
+            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, bodySlamHitRadius, enemyLayer);
+            if (hits.Length > 0)
+            {
+                collided = true;
+                foreach (var col in hits)
+                {
+                    if (col.TryGetComponent<IDamageable>(out var target))
+                        target.TakeDamage(bodySlamDamage);
+                    if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
+                        targetRb.AddForce(new Vector2(dir * bodySlamKnockback, 2f), ForceMode2D.Impulse);
+                }
+
+                TakeDamage(bodySlamSelfDamage);
+                rb.linearVelocity = new Vector2(-dir * bodySlamSelfKnockback, rb.linearVelocity.y);
+            }
+        }
+
+        if (!collided)
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
+        isSlamming = false;
+        isAttacking = false;
     }
 
     // ── Stun ──────────────────────────────────────────────────────────────────
@@ -820,7 +1056,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     public void TakeDamage(float amount)
     {
-        if (IsInvincible) return;
+        if (IsInvincible || IsBerserker) return;
 
         if (IsGuarding)
         {
@@ -850,6 +1086,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void SlayRandomBodyPart()
     {
+        if (IsBerserker) return;
+
         var available = new System.Collections.Generic.List<BodyPart>();
         foreach (BodyPart part in System.Enum.GetValues(typeof(BodyPart)))
             if (!IsSlayed(part)) available.Add(part);
@@ -910,6 +1148,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
         CurrentHp = Mathf.Min(CurrentHp + amount, maxHp);
+        if (CurrentHp > 20f) _hpBerserkerTriggered = false;
         HUDDisplay.Log($"HP {(int)amount} 회복!");
     }
 
@@ -983,6 +1222,33 @@ public class PlayerControl : MonoBehaviour, IDamageable
     }
 
     // ���� Helpers ������������������������������������������������������������������������������������������������������������������������������
+
+    void HitEnemies(Vector2 origin, float radius, float damage, Vector2 knockbackForce, float bleedDps = 0f, float bleedDuration = 0f)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(origin, radius, enemyLayer);
+        foreach (var col in hits)
+        {
+            if (col.TryGetComponent<IDamageable>(out var target))
+            {
+                target.TakeDamage(damage);
+                if (target.IsDead && bloodPuddleMaker != null)
+                    bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
+            }
+
+            if (bleedDps > 0f)
+            {
+                if (col.TryGetComponent<MeleeMonster>(out var mm)) mm.ApplyBloodloss(bleedDps, bleedDuration);
+                else if (col.TryGetComponent<MeleeMonsterSpecial>(out var mms)) mms.ApplyBloodloss(bleedDps, bleedDuration);
+            }
+
+            if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
+                targetRb.AddForce(knockbackForce, ForceMode2D.Impulse);
+
+            Vector2 contactPt = col.ClosestPoint(origin);
+            Vector2 normal = (contactPt - (Vector2)col.bounds.center).normalized;
+            SpawnBlood(contactPt, normal);
+        }
+    }
 
     void HitEnemies(Vector2 origin, float radius, float damage, float knockback, int dir, float bleedDps = 0f, float bleedDuration = 0f)
     {
@@ -1111,8 +1377,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnDrawGizmosSelected()
     {
+        float gizmoRange = comboHits != null && comboHits.Length > 0 ? comboHits[0].range : 1f;
         Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(HitOrigin(lightRange), lightRange * 0.6f);
+        Gizmos.DrawWireSphere(HitOrigin(gizmoRange), gizmoRange * 0.6f);
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(HitOrigin(heavyRange), heavyRange);

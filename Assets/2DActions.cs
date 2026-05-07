@@ -174,10 +174,10 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Parry"",
+                    ""name"": ""GrabThrow"",
                     ""type"": ""Button"",
-                    ""id"": ""11111111-1111-1111-1111-111111111111"",
-                    ""expectedControlType"": ""Button"",
+                    ""id"": ""a374b996-4943-4469-a416-972189013bed"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -186,7 +186,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""name"": ""Map"",
                     ""type"": ""Button"",
                     ""id"": ""11111111-1111-1111-1111-111111111112"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -413,17 +413,6 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""22222222-2222-2222-2222-222222222217"",
-                    ""path"": ""<Keyboard>/leftCtrl"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": "";Keyboard&Mouse"",
-                    ""action"": ""Parry"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""22222222-2222-2222-2222-222222222218"",
                     ""path"": ""<Keyboard>/m"",
                     ""interactions"": """",
@@ -454,6 +443,17 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""action"": ""Escape"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""15fb3186-b36a-4a47-ac36-272063c4008a"",
+                    ""path"": ""<Keyboard>/leftCtrl"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""GrabThrow"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -465,7 +465,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
                     ""name"": ""Pause"",
                     ""type"": ""Button"",
                     ""id"": ""33333333-3333-3333-3333-333333333301"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -538,7 +538,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         m_Player2D_Gather = m_Player2D.FindAction("Gather", throwIfNotFound: true);
         m_Player2D_Skill = m_Player2D.FindAction("Skill", throwIfNotFound: true);
         m_Player2D_SkillChange = m_Player2D.FindAction("SkillChange", throwIfNotFound: true);
-        m_Player2D_Parry = m_Player2D.FindAction("Parry", throwIfNotFound: true);
+        m_Player2D_GrabThrow = m_Player2D.FindAction("GrabThrow", throwIfNotFound: true);
         m_Player2D_Map = m_Player2D.FindAction("Map", throwIfNotFound: true);
         m_Player2D_Escape = m_Player2D.FindAction("Escape", throwIfNotFound: true);
         // UI
@@ -634,7 +634,7 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player2D_Gather;
     private readonly InputAction m_Player2D_Skill;
     private readonly InputAction m_Player2D_SkillChange;
-    private readonly InputAction m_Player2D_Parry;
+    private readonly InputAction m_Player2D_GrabThrow;
     private readonly InputAction m_Player2D_Map;
     private readonly InputAction m_Player2D_Escape;
     /// <summary>
@@ -685,9 +685,9 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @SkillChange => m_Wrapper.m_Player2D_SkillChange;
         /// <summary>
-        /// Provides access to the underlying input action "Player2D/Parry".
+        /// Provides access to the underlying input action "Player2D/GrabThrow".
         /// </summary>
-        public InputAction @Parry => m_Wrapper.m_Player2D_Parry;
+        public InputAction @GrabThrow => m_Wrapper.m_Player2D_GrabThrow;
         /// <summary>
         /// Provides access to the underlying input action "Player2D/Map".
         /// </summary>
@@ -749,9 +749,9 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
             @SkillChange.started += instance.OnSkillChange;
             @SkillChange.performed += instance.OnSkillChange;
             @SkillChange.canceled += instance.OnSkillChange;
-            @Parry.started += instance.OnParry;
-            @Parry.performed += instance.OnParry;
-            @Parry.canceled += instance.OnParry;
+            @GrabThrow.started += instance.OnGrabThrow;
+            @GrabThrow.performed += instance.OnGrabThrow;
+            @GrabThrow.canceled += instance.OnGrabThrow;
             @Map.started += instance.OnMap;
             @Map.performed += instance.OnMap;
             @Map.canceled += instance.OnMap;
@@ -796,9 +796,9 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
             @SkillChange.started -= instance.OnSkillChange;
             @SkillChange.performed -= instance.OnSkillChange;
             @SkillChange.canceled -= instance.OnSkillChange;
-            @Parry.started -= instance.OnParry;
-            @Parry.performed -= instance.OnParry;
-            @Parry.canceled -= instance.OnParry;
+            @GrabThrow.started -= instance.OnGrabThrow;
+            @GrabThrow.performed -= instance.OnGrabThrow;
+            @GrabThrow.canceled -= instance.OnGrabThrow;
             @Map.started -= instance.OnMap;
             @Map.performed -= instance.OnMap;
             @Map.canceled -= instance.OnMap;
@@ -1031,12 +1031,12 @@ public partial class @_2DActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSkillChange(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Parry" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "GrabThrow" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnParry(InputAction.CallbackContext context);
+        void OnGrabThrow(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Map" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

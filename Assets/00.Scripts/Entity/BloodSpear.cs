@@ -23,7 +23,9 @@ public class BloodSpear : MonoBehaviour
     private Vector2 _facingDir;
     private Rigidbody2D _rb;
     private BloodPuddleMaker _puddleMaker;
+    private bool _fireRequested;
 
+    // Original timed-hover init (hover for hoverDuration then auto-seek)
     public void Init(Transform player, Vector2 hoverOffset, int facingDir, float dmg, LayerMask layer, BloodPuddleMaker puddleMaker = null)
     {
         _player = player;
@@ -43,25 +45,69 @@ public class BloodSpear : MonoBehaviour
         StartCoroutine(SpearRoutine());
     }
 
+    // Hold-gimmick init — spears orbit indefinitely until Fire() is called
+    public void InitHold(Transform player, Vector2 hoverOffset, int facingDir, float dmg, LayerMask layer, BloodPuddleMaker puddleMaker = null)
+    {
+        _player = player;
+        _hoverOffset = hoverOffset;
+        _facingDir = new Vector2(facingDir, 0f);
+        damage = dmg;
+        enemyLayer = layer;
+        _puddleMaker = puddleMaker;
+        _fireRequested = false;
+
+        _rb = GetComponent<Rigidbody2D>();
+        _rb.gravityScale = 0f;
+        _rb.linearVelocity = Vector2.zero;
+
+        SetRotation(_facingDir);
+
+        Destroy(gameObject, lifetime);
+        StartCoroutine(HoldRoutine());
+    }
+
+    // Call this (from PlayerSkill) when the Skill button is released
+    public void Fire()
+    {
+        _fireRequested = true;
+    }
+
+    // Orbit indefinitely until Fire() is called, then seek enemies
+    private IEnumerator HoldRoutine()
+    {
+        while (!_fireRequested)
+        {
+            if (_player == null) break;
+            Vector2 target = (Vector2)_player.position + _hoverOffset;
+            _rb.linearVelocity = (target - (Vector2)transform.position) * hoverFollowSpeed;
+            SetRotation(_facingDir);
+            yield return null;
+        }
+
+        _rb.linearVelocity = Vector2.zero;
+        yield return StartCoroutine(SeekAndFly());
+    }
+
+    // Original timed hover then seek
     private IEnumerator SpearRoutine()
     {
-        // Phase 1: hover near player, always face player's direction
         float elapsed = 0f;
         while (elapsed < hoverDuration)
         {
             if (_player == null) break;
             Vector2 target = (Vector2)_player.position + _hoverOffset;
             _rb.linearVelocity = (target - (Vector2)transform.position) * hoverFollowSpeed;
-
             SetRotation(_facingDir);
-
             elapsed += Time.deltaTime;
             yield return null;
         }
 
         _rb.linearVelocity = Vector2.zero;
+        yield return StartCoroutine(SeekAndFly());
+    }
 
-        // Phase 2: seek nearest enemy
+    private IEnumerator SeekAndFly()
+    {
         Transform enemy = FindNearestEnemy();
         while (enemy != null)
         {
@@ -71,9 +117,7 @@ public class BloodSpear : MonoBehaviour
             float newAngle = Mathf.MoveTowardsAngle(current, angle, turnSpeed * Time.deltaTime);
             transform.rotation = Quaternion.AngleAxis(newAngle, Vector3.forward);
 
-            Vector2 dir = transform.right;
-            _rb.linearVelocity = dir * speed;
-
+            _rb.linearVelocity = transform.right * speed;
             yield return null;
         }
 

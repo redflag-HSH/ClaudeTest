@@ -59,6 +59,7 @@ public static event Action            OnEnemyKilled;
     //  Private
     // ──────────────────────────────────────────────────────────────
     private bool _gameOverTriggered;
+    private Coroutine _hitStopCoroutine;
 
     // ──────────────────────────────────────────────────────────────
     //  Unity Lifecycle
@@ -140,7 +141,7 @@ public static event Action            OnEnemyKilled;
     {
         Time.timeScale = 1f;
         ResetSession();
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public void GoToMainMenu()
@@ -225,6 +226,23 @@ public static event Action            OnEnemyKilled;
         BloodCollected = 0;
         PlayTime       = 0f;
         _gameOverTriggered = false;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  HitStop
+    // ──────────────────────────────────────────────────────────────
+    public void DoHitStop(float duration, float timeScale = 0f)
+    {
+        if (_hitStopCoroutine != null) StopCoroutine(_hitStopCoroutine);
+        _hitStopCoroutine = StartCoroutine(HitStopCoroutine(duration, timeScale));
+    }
+
+    private IEnumerator HitStopCoroutine(float duration, float timeScale)
+    {
+        Time.timeScale = timeScale;
+        yield return new WaitForSecondsRealtime(duration);
+        Time.timeScale = 1f;
+        _hitStopCoroutine = null;
     }
 
     // ──────────────────────────────────────────────────────────────
