@@ -122,6 +122,10 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Header("Stun")]
     [Tooltip("Base stun duration in seconds. Scaled up by each slayed arm's stunMultiplier.")]
     public float stunDuration = 0.6f;
+    [Tooltip("Accumulated stun needed to enter downed state.")]
+    public float downThreshold = 2.5f;
+    [Tooltip("How fast the stun accumulator decays per second while upright.")]
+    public float stunDecayRate = 1f;
 
     // ── HP Drain ──────────────────────────────────────────────────────────────
 
@@ -183,6 +187,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public float quickdrawDamage = 30f;
     public float quickdrawStaminaCost = 30f;
     public float quickdrawCooldown = 1.0f;
+    public float quickdrawBleedDps = 5f;
+    public float quickdrawBleedDuration = 3f;
 
     // ── Smashdown ─────────────────────────────────────────────────────────────
 
@@ -213,6 +219,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Header("Grab Throw")]
     public float grabThrowStaminaCost = 30f;
     public float grabThrowCooldown = 1.0f;
+    public float grabThrowStartup = 0.3f;
+    public float grabRange = 1.5f;
+    public float throwForce = 14f;
+    public float throwCollisionDamage = 25f;
+    public float throwDuration = 0.8f;
 
     // ── Berserker Mode ────────────────────────────────────────────────────────
 
@@ -279,6 +290,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public bool IsInvincible { get; private set; }
     public bool IsGuarding { get; private set; }
     public bool IsStunned { get; private set; }
+    public bool IsDown { get; private set; }
+    float _stunAccumulator;
 
     bool isParryActive;
     bool isAttacking;
@@ -287,7 +300,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     public bool IsBerserker { get; private set; }
     float _berserkerTimer;
-    bool _hpBerserkerTriggered;
+    bool _berserkerUsed;
     bool _gatherHeld;
     float _gatherHoldTimer;
 
@@ -319,7 +332,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     _2DActions actions;
     EffectGenerator effects;
     public BloodPuddleMaker bloodPuddleMaker;
-    PlayerSkill playerSkill;
+    PlayerMagicSkill playerMagicSkill;
 
     // ���� Unity ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -338,7 +351,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         slashLine = BuildSlashLine();
         effects = GetComponent<EffectGenerator>();
         bloodPuddleMaker = GetComponent<BloodPuddleMaker>();
-        playerSkill = GetComponent<PlayerSkill>();
+        playerMagicSkill = GetComponent<PlayerMagicSkill>();
     }
 
     void OnDestroy()
@@ -352,7 +365,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Move.canceled += OnMove;
         actions.Player2D.Jump.performed += OnJump;
         actions.Player2D.LightAttack.performed += OnAttack;
-        //actions.Player2D.HeavyAttack.performed += OnHeavyAttack;
         actions.Player2D.Dodge.performed += OnDodge;
         actions.Player2D.Dodge.canceled += OnDodgeRelease;
         actions.Player2D.Guard.performed += OnGuardStart;
@@ -372,7 +384,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Move.canceled -= OnMove;
         actions.Player2D.Jump.performed -= OnJump;
         actions.Player2D.LightAttack.performed -= OnAttack;
-        //actions.Player2D.HeavyAttack.performed -= OnHeavyAttack;
         actions.Player2D.Dodge.performed -= OnDodge;
         actions.Player2D.Dodge.canceled -= OnDodgeRelease;
         actions.Player2D.Guard.performed -= OnGuardStart;
@@ -398,6 +409,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         TickHpDrain();
         TickRun();
         TickBerserker();
+        TickStunAccumulator();
         TickSkillCooldowns();
         CheckSlope();
     }
@@ -475,6 +487,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnJump(InputAction.CallbackContext ctx)
     {
+        if (IsDown)
+        {
+            RecoverFromDown();
+            return;
+        }
         if (isOnLadder)
         {
             ExitLadder();
@@ -488,7 +505,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnAttack(InputAction.CallbackContext ctx)
     {
-        if (isDodging || IsGuarding || IsStunned) return;
+        if (isDodging || IsGuarding || IsStunned || IsDown) return;
 
         if (_isRunning) { QuickdrawSkill(); return; }
 
@@ -575,8 +592,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         float bestDist = float.MaxValue;
         foreach (var col in hits)
         {
-            bool bleeding = (col.TryGetComponent<MeleeMonster>(out var mm) && mm.IsBleeding)
-                         || (col.TryGetComponent<MeleeMonsterSpecial>(out var mms) && mms.IsBleeding);
+            bool bleeding = col.TryGetComponent<MeleeMonster>(out var mm) && mm.IsBleeding;
             if (!bleeding) continue;
             float d = Vector2.Distance(transform.position, col.bounds.center);
             if (d < bestDist) { bestDist = d; target = col; }
@@ -601,8 +617,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
         return true;
     }
 
-    void OnSkillPress(InputAction.CallbackContext ctx) => playerSkill?.OnSkillPress();
-    void OnSkillRelease(InputAction.CallbackContext ctx) => playerSkill?.OnSkillRelease();
+    void OnSkillPress(InputAction.CallbackContext ctx) => playerMagicSkill?.OnMagicSkillPress();
+    void OnSkillRelease(InputAction.CallbackContext ctx) => playerMagicSkill?.OnMagicSkillRelease();
 
     void OnGatherDown(InputAction.CallbackContext ctx) => _gatherHeld = true;
     void OnGatherUp(InputAction.CallbackContext ctx) { _gatherHeld = false; _gatherHoldTimer = 0f; }
@@ -613,16 +629,15 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
 
-        // HP condition: first time HP drops to 1
-        if (!IsBerserker && !_hpBerserkerTriggered && CurrentHp <= 1f)
+        // HP condition: triggers automatically when HP hits 1
+        if (!IsBerserker && !_berserkerUsed && CurrentHp <= 1f)
         {
-            _hpBerserkerTriggered = true;
             ActivateBerserker();
             return;
         }
 
         // Hold condition: hold Gather button for berserkerHoldTime
-        if (!IsBerserker && _gatherHeld)
+        if (!IsBerserker && !_berserkerUsed && _gatherHeld)
         {
             _gatherHoldTimer += Time.deltaTime;
             if (_gatherHoldTimer >= berserkerHoldTime)
@@ -644,9 +659,16 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void ActivateBerserker()
     {
+        Debug.Log("Berserker Mode Activated!");
         IsBerserker = true;
+        _berserkerUsed = true;
         _berserkerTimer = berserkerDuration;
         RestoreAllLimbs();
+    }
+
+    public void RestoreBerserker()
+    {
+        _berserkerUsed = false;
     }
 
     void DeactivateBerserker()
@@ -860,6 +882,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
             {
                 bool alreadyDead = hit.collider.TryGetComponent<IDamageable>(out var preCheck) && preCheck.IsDead;
                 if (!alreadyDead && hit.collider.TryGetComponent<IDamageable>(out var d)) d.TakeDamage(quickdrawDamage);
+                if (!alreadyDead) ApplyBleedToCollider(hit.collider);
                 bool isDead = alreadyDead || !hit.collider.TryGetComponent<IDamageable>(out var m) || m.IsDead;
                 if (isDead)
                 {
@@ -868,7 +891,10 @@ public class PlayerControl : MonoBehaviour, IDamageable
                 }
             }
             else if (hit.collider.TryGetComponent<IDamageable>(out var damageable))
+            {
                 damageable.TakeDamage(quickdrawDamage);
+                ApplyBleedToCollider(hit.collider);
+            }
         }
 
         // Draw slash line along the full travel path then teleport
@@ -879,6 +905,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         IsInvincible = false;
         isAttacking = false;
+    }
+
+    void ApplyBleedToCollider(Collider2D col)
+    {
+        if (col.TryGetComponent<MeleeMonster>(out var mm)) mm.ApplyBloodloss(quickdrawBleedDps, quickdrawBleedDuration);
     }
 
     // ── Rising Attack Skill ───────────────────────────────────────────────────
@@ -931,27 +962,61 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnGrabThrow(InputAction.CallbackContext ctx)
     {
-        if (isDodging || IsGuarding || IsStunned) return;
+        if (isDodging || IsGuarding || IsStunned || IsDown) return;
         GrabThrowSkill();
     }
 
     void GrabThrowSkill()
     {
         if (_grabThrowCooldownTimer > 0f && !IsBerserker) return;
+
+        Collider2D target = FindNearestInRange((Vector2)transform.position, grabRange, enemyLayer);
+        if (target == null) return;
+
         if (!SpendStamina(grabThrowStaminaCost)) return;
         if (!IsBerserker) _grabThrowCooldownTimer = grabThrowCooldown;
-        StartCoroutine(GrabThrowCoroutine());
+        StartCoroutine(GrabThrowCoroutine(target));
     }
 
-    IEnumerator GrabThrowCoroutine()
+    IEnumerator GrabThrowCoroutine(Collider2D targetCol)
     {
-        yield break;
+        isAttacking = true;
+
+        targetCol.TryGetComponent<MeleeMonster>(out var mm);
+
+        if (mm == null) { isAttacking = false; yield break; }
+
+        mm.StartGrab();
+
+        yield return new WaitForSeconds(grabThrowStartup);
+
+        int dir = FacingDir();
+        Vector2 throwVel = new Vector2(dir * throwForce, throwForce * 0.35f);
+
+        mm.Throw(throwVel, throwCollisionDamage, throwDuration, enemyLayer);
+
+        yield return new WaitForSeconds(0.2f);
+        isAttacking = false;
+    }
+
+    Collider2D FindNearestInRange(Vector2 origin, float range, LayerMask layer)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(origin, range, layer);
+        Collider2D best = null;
+        float bestDist = float.MaxValue;
+        foreach (var col in hits)
+        {
+            float d = Vector2.Distance(origin, col.bounds.center);
+            if (d < bestDist) { bestDist = d; best = col; }
+        }
+        return best;
     }
 
     // ── Body Slam Skill ───────────────────────────────────────────────────────
 
     void BodySlamSkill()
     {
+        if (isSlamming) return;
         if (_bodySlamCooldownTimer > 0f && !IsBerserker) return;
         if (!SpendStamina(bodySlamStaminaCost)) return;
         if (!IsBerserker) _bodySlamCooldownTimer = bodySlamCooldown;
@@ -983,8 +1048,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
                 {
                     if (col.TryGetComponent<IDamageable>(out var target))
                         target.TakeDamage(bodySlamDamage);
-                    if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
-                        targetRb.AddForce(new Vector2(dir * bodySlamKnockback, 2f), ForceMode2D.Impulse);
+
+                    var kbForce = new Vector2(dir * bodySlamKnockback, 2f);
+                    if (col.TryGetComponent<MeleeMonster>(out var mm))
+                        mm.ApplyKnockback(kbForce, smashdownRecovery);
+                    else if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
+                        targetRb.AddForce(kbForce, ForceMode2D.Impulse);
                 }
 
                 TakeDamage(bodySlamSelfDamage);
@@ -995,6 +1064,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
         if (!collided)
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
 
+        // Hold isSlamming during recovery so FixedUpdate doesn't cancel the rebound velocity.
+        yield return new WaitForSeconds(smashdownRecovery);
+
         isSlamming = false;
         isAttacking = false;
     }
@@ -1003,8 +1075,16 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     public void ApplyStun()
     {
-        if (IsStunned) return;
-        StartCoroutine(StunCoroutine(stunDuration * ArmStunMultiplier));
+        TryApplyStun(stunDuration * ArmStunMultiplier);
+    }
+
+    void TryApplyStun(float scaled)
+    {
+        _stunAccumulator += scaled;
+        if (IsStunned || IsDown || _stunAccumulator >= downThreshold)
+            EnterDown();
+        else
+            StartCoroutine(StunCoroutine(scaled));
     }
 
     IEnumerator StunCoroutine(float duration)
@@ -1012,11 +1092,36 @@ public class PlayerControl : MonoBehaviour, IDamageable
         IsStunned = true;
         SetInputEnabled(false);
         yield return new WaitForSeconds(duration);
-        SetInputEnabled(true);
-        IsStunned = false;
+        if (!IsDown)
+        {
+            IsStunned = false;
+            SetInputEnabled(true);
+        }
     }
 
-    // ���� Dodge ����������������������������������������������������������������������������������������������������������������������������������
+    void TickStunAccumulator()
+    {
+        if (_stunAccumulator > 0f && !IsDown)
+            _stunAccumulator = Mathf.Max(0f, _stunAccumulator - stunDecayRate * Time.deltaTime);
+    }
+
+    void EnterDown()
+    {
+        StopCoroutine(nameof(StunCoroutine));
+        IsStunned = false;
+        IsDown = true;
+        SetInputEnabled(false);
+        HUDDisplay.Log("다운! 점프로 일어나세요.");
+    }
+
+    void RecoverFromDown()
+    {
+        IsDown = false;
+        _stunAccumulator = 0f;
+        SetInputEnabled(true);
+    }
+
+    // ───── Dodge ──────────────────────────────────────────────────────────────
 
     IEnumerator DodgeCoroutine()
     {
@@ -1054,9 +1159,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     // ���� IDamageable ����������������������������������������������������������������������������������������������������������������������
 
-    public void TakeDamage(float amount)
+    public void TakeDamage(float amount, float stunDuration = 0f)
     {
         if (IsInvincible || IsBerserker) return;
+
+        if (IsDown) EnterDown();
 
         if (IsGuarding)
         {
@@ -1074,14 +1181,21 @@ public class PlayerControl : MonoBehaviour, IDamageable
         StartCoroutine(HitFlash(Color.red));
         HUDDisplay.Log($"{(int)amount} 데미지를 입었다!");
 
+        if (stunDuration > 0f)
+            TryApplyStun(stunDuration * ArmStunMultiplier);
+
+        if (isAttacking)
+            SlayRandomBodyPart();
+
+        if (CurrentHp <= 1f && !_berserkerUsed)
+        {
+            CurrentHp = 1f;
+            ActivateBerserker();
+            return;
+        }
+
         if (CurrentHp <= 0f)
             Die();
-    }
-
-    public void TakeSpecialDamage(float amount)
-    {
-        TakeDamage(amount);
-        SlayRandomBodyPart();
     }
 
     void SlayRandomBodyPart()
@@ -1107,7 +1221,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     // ���� Stamina ������������������������������������������������������������������������������������������������������������������������������
 
-    bool SpendStamina(float cost)
+    public bool SpendStamina(float cost)
     {
         if (CurrentStamina < cost) return false;
         CurrentStamina -= cost;
@@ -1128,10 +1242,10 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void TickRun()
     {
-        if (_shiftDown && moveInput != 0f && !isDodging && !isAttacking)
+        if (_shiftDown && moveInput != 0f && !isDodging && !isAttacking && !IsDown)
         {
             _runHoldTimer += Time.deltaTime;
-            if (_runHoldTimer >= runHoldTime)
+            if (_runHoldTimer >= runHoldTime && IsGrounded())
                 _isRunning = true;
         }
     }
@@ -1148,7 +1262,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
         CurrentHp = Mathf.Min(CurrentHp + amount, maxHp);
-        if (CurrentHp > 20f) _hpBerserkerTriggered = false;
         HUDDisplay.Log($"HP {(int)amount} 회복!");
     }
 
@@ -1238,7 +1351,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
             if (bleedDps > 0f)
             {
                 if (col.TryGetComponent<MeleeMonster>(out var mm)) mm.ApplyBloodloss(bleedDps, bleedDuration);
-                else if (col.TryGetComponent<MeleeMonsterSpecial>(out var mms)) mms.ApplyBloodloss(bleedDps, bleedDuration);
             }
 
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
@@ -1265,7 +1377,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
             if (bleedDps > 0f)
             {
                 if (col.TryGetComponent<MeleeMonster>(out var mm)) mm.ApplyBloodloss(bleedDps, bleedDuration);
-                else if (col.TryGetComponent<MeleeMonsterSpecial>(out var mms)) mms.ApplyBloodloss(bleedDps, bleedDuration);
             }
 
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))

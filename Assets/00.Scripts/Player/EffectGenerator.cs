@@ -6,6 +6,9 @@ using UnityEngine.Pool;
 [RequireComponent(typeof(PlayerControl))]
 public class EffectGenerator : MonoBehaviour
 {
+    [Header("Hedgehog Spike")]
+    public GameObject hedgehogSpikePrefab;
+
     [Header("Sliced Limbs")]
     public GameObject slicedLeftArmPrefab;
     public GameObject slicedRightArmPrefab;
@@ -36,6 +39,28 @@ public class EffectGenerator : MonoBehaviour
             defaultCapacity: bloodPoolSize / 2,
             maxSize:         bloodPoolSize
         );
+    }
+
+    public void SpawnHedgehogSpike(Vector2 origin, Vector2 target, float speed)
+    {
+        if (hedgehogSpikePrefab == null) return;
+
+        Vector2 dir   = (target - origin).normalized;
+        float   angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+        GameObject obj = Instantiate(hedgehogSpikePrefab, origin, Quaternion.AngleAxis(angle, Vector3.forward));
+        StartCoroutine(MoveSpikeVisual(obj, target, speed));
+    }
+
+    IEnumerator MoveSpikeVisual(GameObject obj, Vector2 target, float speed)
+    {
+        while (obj != null)
+        {
+            obj.transform.position = Vector2.MoveTowards(obj.transform.position, target, speed * Time.deltaTime);
+            if (((Vector2)obj.transform.position - target).sqrMagnitude < 0.01f) break;
+            yield return null;
+        }
+        if (obj != null) Destroy(obj);
     }
 
     public void SpawnBlood(Vector2 point, Vector2 normal)

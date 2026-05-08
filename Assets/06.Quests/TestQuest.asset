@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: TestQuest
   m_EditorClassIdentifier: 
   questId: 99
-  text: this is test
+  text: This is Test

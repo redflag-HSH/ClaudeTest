@@ -65,7 +65,7 @@ public class Dummy : MonoBehaviour, IDamageable
 
     // ── IDamageable ────────────────────────────────────────────────────────────
 
-    public void TakeDamage(float amount)
+    public void TakeDamage(float amount, float stunDuration = 0f)
     {
         if (IsDead) return;
 

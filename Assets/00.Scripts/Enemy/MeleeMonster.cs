@@ -46,6 +46,16 @@ public class MeleeMonster : EnemySliceable, IDamageable
 
     private float nextAttackTime;
     private bool isLunging;
+    private float _knockbackTimer;
+
+    public bool IsGrabbed { get; private set; }
+    public bool IsThrown  { get; private set; }
+    private float _thrownCollisionDamage;
+
+    // ── Stun ─────────────────────────────────────────────────────────────────
+
+    float _stunTimer;
+    public bool IsStunned => _stunTimer > 0f;
 
     // ── Bloodloss ─────────────────────────────────────────────────────────────
 
@@ -107,6 +117,9 @@ public class MeleeMonster : EnemySliceable, IDamageable
         if (CurrentState == State.Dead) return;
 
         TickBloodloss();
+        if (IsGrabbed || IsThrown) return;
+        if (_knockbackTimer > 0f) { _knockbackTimer -= Time.deltaTime; return; }
+        if (_stunTimer > 0f) { _stunTimer -= Time.deltaTime; rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); return; }
         UpdateState();
         RunState();
     }
@@ -219,13 +232,75 @@ public class MeleeMonster : EnemySliceable, IDamageable
         isLunging = false;
     }
 
+    public void StartGrab()
+    {
+        if (IsDead) return;
+        IsGrabbed = true;
+        rb.gravityScale = 0f;
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    public void Throw(Vector2 velocity, float collisionDamage, float duration, LayerMask enemyLayer)
+    {
+        if (!IsGrabbed) return;
+        IsGrabbed = false;
+        IsThrown  = true;
+        _thrownCollisionDamage = collisionDamage;
+        rb.gravityScale = 1f;
+        rb.linearVelocity = velocity;
+        StartCoroutine(ThrownCoroutine(collisionDamage, duration, enemyLayer));
+    }
+
+    IEnumerator ThrownCoroutine(float collisionDamage, float duration, LayerMask enemyLayer)
+    {
+        yield return new WaitForSeconds(0.1f);
+        float elapsed = 0.1f;
+        bool impacted = false;
+
+        while (elapsed < duration && !impacted)
+        {
+            yield return null;
+            elapsed += Time.deltaTime;
+
+            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, 0.5f, enemyLayer);
+            foreach (var col in hits)
+            {
+                if (col.gameObject == gameObject) continue;
+                if (col.TryGetComponent<IDamageable>(out var target))
+                    target.TakeDamage(collisionDamage);
+                TakeDamage(collisionDamage);
+                impacted = true;
+                break;
+            }
+        }
+
+        IsThrown = false;
+    }
+
+    void OnCollisionEnter2D(Collision2D col)
+    {
+        if (!IsThrown) return;
+        if ((groundLayer.value & (1 << col.gameObject.layer)) == 0) return;
+        TakeDamage(_thrownCollisionDamage);
+        IsThrown = false;
+    }
+
+    public void ApplyKnockback(Vector2 force, float duration)
+    {
+        rb.linearVelocity = new Vector2(force.x, rb.linearVelocity.y);
+        _knockbackTimer = duration;
+    }
+
     // ── Hit / IDamageable ────────────────────────────────────────────────────
 
-    public void TakeDamage(float amount)
+    public void TakeDamage(float amount, float stunDuration = 0f)
     {
         if (CurrentState == State.Dead) return;
 
         CurrentHp -= amount;
+
+        if (stunDuration > 0f)
+            _stunTimer = Mathf.Max(_stunTimer, stunDuration);
 
         if (CurrentHp <= 0f)
             Die();

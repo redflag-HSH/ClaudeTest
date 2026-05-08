@@ -95,6 +95,7 @@ public class Bonfire : MonoBehaviour, IInteractable
         HealPlayer(player);
         RestoreStamina(player);
         player.RestoreAllLimbs();
+        player.RestoreBerserker();
 
         SaveGame();
 

@@ -32,7 +32,7 @@ public class PartSliceEnemy : MonoBehaviour, IDamageable
         else
             cuttedLimbs.Add(limbPart.limbPart);
     }
-    public void TakeDamage(float damage)
+    public void TakeDamage(float damage, float stunDuration = 0f)
     {
         hp -= damage;
         if (hp <= 0)
