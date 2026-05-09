@@ -239,6 +239,8 @@ MonoBehaviour:
     stunMultiplier: 0
   headFadeDuration: 0.5
   stunDuration: 0.6
+  downThreshold: 2.5
+  stunDecayRate: 1
   hpDrainPerSecond: 1.5
   hpDrainFloor: 1
   lightStaminaCost: 12
@@ -280,6 +282,8 @@ MonoBehaviour:
   quickdrawDamage: 30
   quickdrawStaminaCost: 30
   quickdrawCooldown: 1
+  quickdrawBleedDps: 5
+  quickdrawBleedDuration: 3
   smashdownDamage: 25
   smashdownRange: 0.9
   smashdownKnockback: 6
@@ -298,8 +302,18 @@ MonoBehaviour:
   bodySlamCooldown: 1.5
   grabThrowStaminaCost: 30
   grabThrowCooldown: 1
+  grabThrowStartup: 0.3
+  grabRange: 1.5
+  throwForce: 14
+  throwCollisionDamage: 25
+  throwDuration: 0.8
   berserkerDuration: 10
   berserkerHoldTime: 1
+  berserkerActivationRange: 5
+  swordAuraPrefab: {fileID: 7132775705641607142, guid: 62a68eef145568a4fb15a8fd06708aab, type: 3}
+  swordAuraDamage: 40
+  swordAuraSpeed: 18
+  swordAuraLifetime: 1.5
   risingDamage: 20
   risingRange: 1
   risingKnockback: 12

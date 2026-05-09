@@ -17,13 +17,13 @@ public class PlayerMagicSkill : MonoBehaviour
 
     [Header("Magic Skill Level System")]
     public MagicSkillLevelData magicSkillLevelData;
-    [Min(0)] public int bloodSpearLevel       = 0;
-    [Min(0)] public int drainLevel            = 0;
-    [Min(0)] public int hedgehogLevel         = 0;
-    [Min(0)] public int eclipseLevel          = 0;
+    [Min(0)] public int bloodSpearLevel = 0;
+    [Min(0)] public int drainLevel = 0;
+    [Min(0)] public int hedgehogLevel = 0;
+    [Min(0)] public int eclipseLevel = 0;
     [Min(0)] public int daughterOfDragonLevel = 0;
-    [Min(0)] public int steelBloodLevel       = 0;
-    [Min(0)] public int coldBloodLevel        = 0;
+    [Min(0)] public int steelBloodLevel = 0;
+    [Min(0)] public int coldBloodLevel = 0;
 
     [Header("Current Magic Skill")]
     public MagicSkillType currentMagicSkill = MagicSkillType.BloodSpear;
@@ -51,11 +51,11 @@ public class PlayerMagicSkill : MonoBehaviour
     public int drainTargetCount = 3;
 
     [Header("Hedgehog")]
-    public float hedgehogRange        = 4f;
-    public float hedgehogDamage       = 25f;
-    public float hedgehogBloodCost    = 20f;
-    public float hedgehogCooldown     = 3f;
-    public float hedgehogSpikeSpeed   = 12f;
+    public float hedgehogRange = 4f;
+    public float hedgehogDamage = 25f;
+    public float hedgehogBloodCost = 20f;
+    public float hedgehogCooldown = 3f;
+    public float hedgehogSpikeSpeed = 12f;
     public float hedgehogSpikeLifetime = 2f;
 
     // ── Eclipse ── (stats TBD)
@@ -72,7 +72,7 @@ public class PlayerMagicSkill : MonoBehaviour
 
     void Awake()
     {
-        _player  = GetComponent<PlayerControl>();
+        _player = GetComponent<PlayerControl>();
         _effects = GetComponent<EffectGenerator>();
         if (magicSkillLevelData != null) ApplyMagicLevels();
     }
@@ -95,12 +95,12 @@ public class PlayerMagicSkill : MonoBehaviour
         if (magicSkillLevelData == null) return;
         bloodSpearLevel = Mathf.Clamp(level, 0, magicSkillLevelData.MaxBloodSpearLevel);
         var d = magicSkillLevelData.GetBloodSpear(bloodSpearLevel);
-        spearCount        = d.spearCount;
-        hoverRadius       = d.hoverRadius;
-        spearDamage       = d.spearDamage;
+        spearCount = d.spearCount;
+        hoverRadius = d.hoverRadius;
+        spearDamage = d.spearDamage;
         bloodCostPerSpear = d.bloodCostPerSpear;
-        spearInterval     = d.spearInterval;
-        maxSpearCount     = d.maxSpearCount;
+        spearInterval = d.spearInterval;
+        maxSpearCount = d.maxSpearCount;
     }
 
     public void ApplyDrainLevel(int level)
@@ -108,11 +108,11 @@ public class PlayerMagicSkill : MonoBehaviour
         if (magicSkillLevelData == null) return;
         drainLevel = Mathf.Clamp(level, 0, magicSkillLevelData.MaxDrainLevel);
         var d = magicSkillLevelData.GetDrain(drainLevel);
-        drainRange       = d.drainRange;
-        drainDamage      = d.drainDamage;
-        drainHealRatio   = d.drainHealRatio;
-        drainBloodCost   = d.drainBloodCost;
-        drainCooldown    = d.drainCooldown;
+        drainRange = d.drainRange;
+        drainDamage = d.drainDamage;
+        drainHealRatio = d.drainHealRatio;
+        drainBloodCost = d.drainBloodCost;
+        drainCooldown = d.drainCooldown;
         drainTargetCount = d.drainTargetCount;
     }
 
@@ -121,11 +121,11 @@ public class PlayerMagicSkill : MonoBehaviour
         if (magicSkillLevelData == null) return;
         hedgehogLevel = Mathf.Clamp(level, 0, magicSkillLevelData.MaxHedgehogLevel);
         var d = magicSkillLevelData.GetHedgehog(hedgehogLevel);
-        hedgehogRange         = d.hedgehogRange;
-        hedgehogDamage        = d.hedgehogDamage;
-        hedgehogBloodCost     = d.hedgehogBloodCost;
-        hedgehogCooldown      = d.hedgehogCooldown;
-        hedgehogSpikeSpeed    = d.hedgehogSpikeSpeed;
+        hedgehogRange = d.hedgehogRange;
+        hedgehogDamage = d.hedgehogDamage;
+        hedgehogBloodCost = d.hedgehogBloodCost;
+        hedgehogCooldown = d.hedgehogCooldown;
+        hedgehogSpikeSpeed = d.hedgehogSpikeSpeed;
         hedgehogSpikeLifetime = d.hedgehogSpikeLifetime;
     }
 
@@ -159,7 +159,7 @@ public class PlayerMagicSkill : MonoBehaviour
 
     void Update()
     {
-        if (_drainCooldownTimer    > 0f) _drainCooldownTimer    -= Time.deltaTime;
+        if (_drainCooldownTimer > 0f) _drainCooldownTimer -= Time.deltaTime;
         if (_hedgehogCooldownTimer > 0f) _hedgehogCooldownTimer -= Time.deltaTime;
     }
 
@@ -167,13 +167,13 @@ public class PlayerMagicSkill : MonoBehaviour
     {
         switch (currentMagicSkill)
         {
-            case MagicSkillType.BloodSpear:       _holdCoroutine = StartCoroutine(BloodSpearHoldCoroutine()); break;
-            case MagicSkillType.Drain:            UseDrain();            break;
-            case MagicSkillType.Hedgehog:         UseHedgehog();         break;
-            case MagicSkillType.Eclipse:          UseEclipse();          break;
+            case MagicSkillType.BloodSpear: _holdCoroutine = StartCoroutine(BloodSpearHoldCoroutine()); break;
+            case MagicSkillType.Drain: UseDrain(); break;
+            case MagicSkillType.Hedgehog: UseHedgehog(); break;
+            case MagicSkillType.Eclipse: UseEclipse(); break;
             case MagicSkillType.DaughterOfDragon: UseDaughterOfDragon(); break;
-            case MagicSkillType.SteelBlood:       UseSteelBlood();       break;
-            case MagicSkillType.ColdBlood:        UseColdBlood();        break;
+            case MagicSkillType.SteelBlood: UseSteelBlood(); break;
+            case MagicSkillType.ColdBlood: UseColdBlood(); break;
         }
     }
 
@@ -223,7 +223,7 @@ public class PlayerMagicSkill : MonoBehaviour
                 totalDamage += drainDamage;
             }
 
-            if (col.TryGetComponent<MeleeMonster>(out var mm))
+            if (col.TryGetComponent<SmallMonsterMelee>(out var mm))
                 mm.ApplyBloodloss(_player.bleedDps, _player.bleedDuration);
 
             affected++;

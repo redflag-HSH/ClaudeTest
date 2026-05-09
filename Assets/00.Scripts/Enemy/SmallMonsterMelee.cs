@@ -3,11 +3,11 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
-public class MeleeMonster : EnemySliceable, IDamageable
+public class SmallMonsterMelee : EnemySliceable, IDamageable
 {
     // ── State Machine ────────────────────────────────────────────────────────
 
-    public enum State { Patrol, Chase, Attack, Dead }
+    public enum State { Patrol, Chase, Attack, Runaway, Dead }
     public State CurrentState { get; private set; } = State.Patrol;
 
     // ── Stats ────────────────────────────────────────────────────────────────
@@ -34,6 +34,7 @@ public class MeleeMonster : EnemySliceable, IDamageable
     public float chaseRange = 6f;
     public float attackRange = 1.2f;
     public float chaseSpeed = 4f;
+    public float runawaySpeed = 5f;
     public LayerMask playerLayer;
 
     // ── Attack ───────────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ public class MeleeMonster : EnemySliceable, IDamageable
     private float _knockbackTimer;
 
     public bool IsGrabbed { get; private set; }
-    public bool IsThrown  { get; private set; }
+    public bool IsThrown { get; private set; }
     private float _thrownCollisionDamage;
 
     // ── Stun ─────────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ public class MeleeMonster : EnemySliceable, IDamageable
 
     private Rigidbody2D rb;
     private Transform player;
+    private PlayerControl _playerControl;
 
     // ── Unity ────────────────────────────────────────────────────────────────
 
@@ -109,7 +111,10 @@ public class MeleeMonster : EnemySliceable, IDamageable
     {
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null)
+        {
             player = playerObj.transform;
+            _playerControl = playerObj.GetComponent<PlayerControl>();
+        }
     }
 
     void Update()
@@ -128,12 +133,18 @@ public class MeleeMonster : EnemySliceable, IDamageable
 
     void UpdateState()
     {
+        if (_playerControl != null && _playerControl.IsBerserker)
+        {
+            ChangeState(State.Runaway);
+            return;
+        }
+
         float distToPlayer = player != null ? Vector2.Distance(transform.position, player.position) : float.MaxValue;
 
         if (distToPlayer <= attackRange)
             ChangeState(State.Attack);
         else if (distToPlayer <= chaseRange)
-            ChangeState(State.Chase);
+            CheckWallBeforeChase(distToPlayer);
         else
             ChangeState(State.Patrol);
     }
@@ -145,7 +156,16 @@ public class MeleeMonster : EnemySliceable, IDamageable
             case State.Patrol: PatrolUpdate(); break;
             case State.Chase: ChaseUpdate(); break;
             case State.Attack: AttackUpdate(); break;
+            case State.Runaway: RunawayUpdate(); break;
         }
+    }
+
+    void RunawayUpdate()
+    {
+        if (player == null) return;
+        int dir = transform.position.x > player.position.x ? 1 : -1;
+        Move(dir, runawaySpeed);
+        FaceDirection(dir);
     }
 
     void ChangeState(State next)
@@ -154,6 +174,13 @@ public class MeleeMonster : EnemySliceable, IDamageable
         CurrentState = next;
     }
 
+    void CheckWallBeforeChase(float distanceToPlayer)
+    {
+        Vector2 dir = player.position - transform.position;
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, dir, distanceToPlayer, groundLayer);
+        if (hit.collider == null)
+            ChangeState(State.Chase);
+    }
     // ── Patrol ───────────────────────────────────────────────────────────────
 
     void PatrolUpdate()
@@ -221,8 +248,12 @@ public class MeleeMonster : EnemySliceable, IDamageable
 
         foreach (var col in hits)
         {
-            if (col.TryGetComponent<IDamageable>(out var target))
-                target.TakeDamage(attackDamage);
+            if (_playerControl != null && _playerControl.IsDown && col.gameObject == _playerControl.gameObject)
+            {
+                _playerControl.TakeSpecialDamage(attackDamage);
+            }
+            else if (col.TryGetComponent<IDamageable>(out var target))
+                target.TakeDamage(attackDamage, .5f);
 
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
                 targetRb.AddForce(new Vector2(dir * knockbackForce, 2f), ForceMode2D.Impulse);
@@ -244,7 +275,7 @@ public class MeleeMonster : EnemySliceable, IDamageable
     {
         if (!IsGrabbed) return;
         IsGrabbed = false;
-        IsThrown  = true;
+        IsThrown = true;
         _thrownCollisionDamage = collisionDamage;
         rb.gravityScale = 1f;
         rb.linearVelocity = velocity;

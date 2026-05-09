@@ -92,10 +92,12 @@ public class Bonfire : MonoBehaviour, IInteractable
 
         yield return new WaitForSeconds(restAnimDuration);
 
+        player.DeactivateBerserker();
         HealPlayer(player);
         RestoreStamina(player);
         player.RestoreAllLimbs();
         player.RestoreBerserker();
+
 
         SaveGame();
 

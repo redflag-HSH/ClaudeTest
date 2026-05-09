@@ -22,24 +22,24 @@ public class GameManager : MonoBehaviour
     //  Static Events  (cross-system, no Inspector wiring needed)
     // ──────────────────────────────────────────────────────────────
     public static event Action<GameState> OnStateChanged;
-    public static event Action            OnPlayerDied;
-    public static event Action            OnGameOver;
-    public static event Action            OnGamePaused;
-    public static event Action            OnGameResumed;
-public static event Action            OnEnemyKilled;
+    public static event Action OnPlayerDied;
+    public static event Action OnGameOver;
+    public static event Action OnGamePaused;
+    public static event Action OnGameResumed;
+    public static event Action OnEnemyKilled;
 
     // ──────────────────────────────────────────────────────────────
     //  Inspector
     // ──────────────────────────────────────────────────────────────
     [Header("Scene Names")]
     [Tooltip("Exact build-settings name of the main menu scene")]
-    [SerializeField] private string _mainMenuScene  = "MainMenu";
+    [SerializeField] private string _mainMenuScene = "MainMenu";
     [Tooltip("Exact build-settings name of the first gameplay scene")]
-    [SerializeField] private string _gameplayScene  = "Gameplay";
+    [SerializeField] private string _gameplayScene = "Gameplay";
 
     [Header("Game Over")]
     [Tooltip("Seconds between player death and the Game Over screen firing")]
-    [SerializeField] private float _gameOverDelay = 2f;
+    [SerializeField] private float _gameOverDelay = 3f;
 
     [Header("Inspector Events")]
     public UnityEvent onGameOver;
@@ -49,11 +49,11 @@ public static event Action            OnEnemyKilled;
     //──────────────────────────────────────────────────────────────
     //  Session Stats  (read by UI, end-screen, etc.)
     // ──────────────────────────────────────────────────────────────
-    public int   EnemiesKilled  { get; private set; }
-    public int   SliceKills     { get; private set; }
-    public int   DamageTaken    { get; private set; }
-    public int   BloodCollected { get; private set; }
-    public float PlayTime       { get; private set; }
+    public int EnemiesKilled { get; private set; }
+    public int SliceKills { get; private set; }
+    public int DamageTaken { get; private set; }
+    public int BloodCollected { get; private set; }
+    public float PlayTime { get; private set; }
 
     // ──────────────────────────────────────────────────────────────
     //  Private
@@ -133,7 +133,7 @@ public static event Action            OnEnemyKilled;
 
     public void TogglePause()
     {
-        if (State == GameState.Playing)     PauseGame();
+        if (State == GameState.Playing) PauseGame();
         else if (State == GameState.Paused) ResumeGame();
     }
 
@@ -141,7 +141,6 @@ public static event Action            OnEnemyKilled;
     {
         Time.timeScale = 1f;
         ResetSession();
-        LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public void GoToMainMenu()
@@ -189,6 +188,8 @@ public static event Action            OnEnemyKilled;
         SetState(GameState.GameOver);
         OnGameOver?.Invoke();
         onGameOver?.Invoke();
+
+        _gameOverTriggered = false;
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -220,11 +221,11 @@ public static event Action            OnEnemyKilled;
 
     private void ResetSession()
     {
-        EnemiesKilled  = 0;
-        SliceKills     = 0;
-        DamageTaken    = 0;
+        EnemiesKilled = 0;
+        SliceKills = 0;
+        DamageTaken = 0;
         BloodCollected = 0;
-        PlayTime       = 0f;
+        PlayTime = 0f;
         _gameOverTriggered = false;
     }
 
@@ -252,8 +253,8 @@ public static event Action            OnEnemyKilled;
     [ContextMenu("Debug / Force Game Over")]
     private void Debug_ForceGameOver() => StartCoroutine(GameOverRoutine());
 
-[ContextMenu("Debug / Print Session Stats")]
+    [ContextMenu("Debug / Print Session Stats")]
     private void Debug_PrintStats() =>
-        Debug.Log($"[GameManager] Kills={EnemiesKilled} | SliceKills={SliceKills} | DamageTaken={DamageTaken} | BloodCollected={BloodCollected} | PlayTime={PlayTime:F1}s");
+            Debug.Log($"[GameManager] Kills={EnemiesKilled} | SliceKills={SliceKills} | DamageTaken={DamageTaken} | BloodCollected={BloodCollected} | PlayTime={PlayTime:F1}s");
 #endif
 }
