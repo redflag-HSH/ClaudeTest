@@ -6,6 +6,7 @@ using UnityEngine.Pool;
 [RequireComponent(typeof(PlayerControl))]
 public class EffectGenerator : MonoBehaviour
 {
+    public static EffectGenerator Instance;
     [Header("Hedgehog Spike")]
     public GameObject hedgehogSpikePrefab;
 
@@ -30,14 +31,15 @@ public class EffectGenerator : MonoBehaviour
 
     void Awake()
     {
+        Instance = this;
         _bloodPool = new ObjectPool<GameObject>(
-            createFunc:      CreateBlood,
-            actionOnGet:     OnGet,
+            createFunc: CreateBlood,
+            actionOnGet: OnGet,
             actionOnRelease: OnRelease,
             actionOnDestroy: OnPoolDestroy,
             collectionCheck: false,
             defaultCapacity: bloodPoolSize / 2,
-            maxSize:         bloodPoolSize
+            maxSize: bloodPoolSize
         );
     }
 
@@ -45,8 +47,8 @@ public class EffectGenerator : MonoBehaviour
     {
         if (hedgehogSpikePrefab == null) return;
 
-        Vector2 dir   = (target - origin).normalized;
-        float   angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        Vector2 dir = (target - origin).normalized;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
         GameObject obj = Instantiate(hedgehogSpikePrefab, origin, Quaternion.AngleAxis(angle, Vector3.forward));
         StartCoroutine(MoveSpikeVisual(obj, target, speed));
@@ -81,7 +83,7 @@ public class EffectGenerator : MonoBehaviour
     GameObject CreateBlood()
     {
         var obj = Instantiate(bloodPrefab);
-        var ps  = obj.GetComponent<ParticleSystem>();
+        var ps = obj.GetComponent<ParticleSystem>();
         _psCache[obj] = ps;
 
         if (ps != null)
@@ -117,11 +119,11 @@ public class EffectGenerator : MonoBehaviour
     {
         GameObject prefab = part switch
         {
-            BodyPart.LeftArm  => slicedLeftArmPrefab,
+            BodyPart.LeftArm => slicedLeftArmPrefab,
             BodyPart.RightArm => slicedRightArmPrefab,
-            BodyPart.LeftLeg  => slicedLeftLegPrefab,
+            BodyPart.LeftLeg => slicedLeftLegPrefab,
             BodyPart.RightLeg => slicedRightLegPrefab,
-            _                 => null
+            _ => null
         };
 
         if (prefab == null) return;

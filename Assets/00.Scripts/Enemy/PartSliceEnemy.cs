@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PartSliceEnemy : MonoBehaviour, IDamageable
+public class PartSliceEnemy : MonoBehaviour
 {
     [SerializeField] float hp = 300;
-    public bool IsDead { get; set; }
+    public virtual bool IsDead { get; set; }
     [SerializeField] List<PartSliceable> sliceableLimbs = new List<PartSliceable>();
     public enum Limb { Head, Body, Larm, Rarm, Llegs, Rlegs }
-    [SerializeField] List<Limb> cuttedLimbs;
+    [SerializeField] protected List<Limb> cuttedLimbs;
     void Start()
     {
         cuttedLimbs = new List<Limb>();
@@ -31,13 +31,5 @@ public class PartSliceEnemy : MonoBehaviour, IDamageable
         }
         else
             cuttedLimbs.Add(limbPart.limbPart);
-    }
-    public void TakeDamage(float damage, float stunDuration = 0f)
-    {
-        hp -= damage;
-        if (hp <= 0)
-        {
-            IsDead = true;
-        }
     }
 }
