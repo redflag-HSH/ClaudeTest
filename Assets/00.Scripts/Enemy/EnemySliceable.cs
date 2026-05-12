@@ -82,8 +82,8 @@ public class EnemySliceable : MonoBehaviour
         _sliced = true;
 
         // Stop the enemy AI so it doesn't keep acting while being destroyed
-        if (TryGetComponent<SmallMonsterMelee>(out var monster))
-            monster.enabled = false;
+        if (TryGetComponent<StateMachine>(out var sm))
+            sm.enabled = false;
 
         Collider2D col = GetComponent<Collider2D>();
         if (col != null) col.enabled = false;

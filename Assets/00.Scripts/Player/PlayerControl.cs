@@ -600,7 +600,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         float bestDist = float.MaxValue;
         foreach (var col in hits)
         {
-            bool bleeding = col.TryGetComponent<SmallMonsterMelee>(out var mm) && mm.IsBleeding;
+            bool bleeding = col.TryGetComponent<IMonsterCore>(out var mm) && mm.IsBleeding;
             if (!bleeding) continue;
             float d = Vector2.Distance(transform.position, col.bounds.center);
             if (d < bestDist) { bestDist = d; target = col; }
@@ -965,7 +965,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void ApplyBleedToCollider(Collider2D col)
     {
-        if (col.TryGetComponent<SmallMonsterMelee>(out var mm)) mm.ApplyBloodloss(quickdrawBleedDps, quickdrawBleedDuration);
+        if (col.TryGetComponent<IMonsterCore>(out var mm)) mm.ApplyBloodloss(quickdrawBleedDps, quickdrawBleedDuration);
     }
 
     // ── Rising Attack Skill ───────────────────────────────────────────────────
@@ -1038,9 +1038,10 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         isAttacking = true;
 
-        targetCol.TryGetComponent<SmallMonsterMelee>(out var mm);
+        targetCol.TryGetComponent<IMonsterCore>(out var mm);
 
         if (mm == null) { isAttacking = false; yield break; }
+        if (mm.MonsterType != IMonsterCore.Type.small) { isAttacking = false; yield break; }
 
         mm.StartGrab();
 
@@ -1106,7 +1107,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
                         target.TakeDamage(bodySlamDamage);
 
                     var kbForce = new Vector2(dir * bodySlamKnockback, 2f);
-                    if (col.TryGetComponent<SmallMonsterMelee>(out var mm))
+                    if (col.TryGetComponent<IMonsterCore>(out var mm))
                         mm.ApplyKnockback(kbForce, smashdownRecovery);
                     else if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
                         targetRb.AddForce(kbForce, ForceMode2D.Impulse);
@@ -1423,7 +1424,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
             if (bleedDps > 0f)
             {
-                if (col.TryGetComponent<SmallMonsterMelee>(out var mm)) mm.ApplyBloodloss(bleedDps, bleedDuration);
+                if (col.TryGetComponent<IMonsterCore>(out var mm)) mm.ApplyBloodloss(bleedDps, bleedDuration);
             }
 
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
@@ -1449,7 +1450,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
             if (bleedDps > 0f)
             {
-                if (col.TryGetComponent<SmallMonsterMelee>(out var mm)) mm.ApplyBloodloss(bleedDps, bleedDuration);
+                if (col.TryGetComponent<IMonsterCore>(out var mm)) mm.ApplyBloodloss(bleedDps, bleedDuration);
             }
 
             if (col.TryGetComponent<Rigidbody2D>(out var targetRb))

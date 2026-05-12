@@ -933,9 +933,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6483620851035950486}
-  - component: {fileID: 5706605534424772866}
+  - component: {fileID: -1459540194531872645}
+  - component: {fileID: 4662618066273760049}
+  - component: {fileID: 8909047141706888729}
   m_Layer: 8
-  m_Name: SlicePartEnemy
+  m_Name: MiddleEnemy
   m_TagString: Untagged
   m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -962,7 +964,7 @@ Transform:
   - {fileID: 7251014738032389757}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5706605534424772866
+--- !u!114 &-1459540194531872645
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -971,7 +973,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7613983907333122992}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3d8ab8a1d3353b409ab152e237d6fcc, type: 3}
+  m_Script: {fileID: 11500000, guid: 2e8b9b68ce509a64281ee6009dead578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hp: 300
@@ -983,3 +985,84 @@ MonoBehaviour:
   - {fileID: 5550094097056953238}
   - {fileID: 6867142303421237528}
   cuttedLimbs: 
+  maxHp: 150
+  patrolSpeed: 2
+  patrolDistance: 4
+  chaseRange: 8
+  chaseSpeed: 3
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  groundCheckDist: 0
+  groundOffset: 4.3
+  dodgeChance: 0.3
+  attackPatterns:
+  - animationName: normal
+    range: 5
+    lungeForce: 15
+    windupTime: 1
+    endDelay: 2
+    damage: 20
+    knockbackForce: 0
+    stunDuration: 2
+    attacktype: 0
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+  - animationName: special
+    range: 3
+    lungeForce: 5
+    windupTime: 0.1
+    endDelay: 1.7
+    damage: 30
+    knockbackForce: 25
+    stunDuration: 2
+    attacktype: 1
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 0
+  attackCooldown: 1.5
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  spawnPoint: {x: 0, y: 0}
+  patrolDir: 1
+  nextAttackTime: 0
+  type: 1
+--- !u!50 &4662618066273760049
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7613983907333122992}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!114 &8909047141706888729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7613983907333122992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1f5d67a671384040848a22a6b3be299, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

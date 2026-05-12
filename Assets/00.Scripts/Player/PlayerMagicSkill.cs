@@ -223,7 +223,7 @@ public class PlayerMagicSkill : MonoBehaviour
                 totalDamage += drainDamage;
             }
 
-            if (col.TryGetComponent<SmallMonsterMelee>(out var mm))
+            if (col.TryGetComponent<IMonsterCore>(out var mm))
                 mm.ApplyBloodloss(_player.bleedDps, _player.bleedDuration);
 
             affected++;
