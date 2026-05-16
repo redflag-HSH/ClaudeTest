@@ -12,6 +12,7 @@ public class PlayerMagicSkill : MonoBehaviour
         Eclipse,
         DaughterOfDragon,
         SteelBlood,
+        HeatBlood,
         ColdBlood,
     }
 
@@ -23,7 +24,8 @@ public class PlayerMagicSkill : MonoBehaviour
     [Min(0)] public int eclipseLevel = 0;
     [Min(0)] public int daughterOfDragonLevel = 0;
     [Min(0)] public int steelBloodLevel = 0;
-    [Min(0)] public int coldBloodLevel = 0;
+    [Min(0)] public int heatBloodLevel  = 0;
+    [Min(0)] public int coldBloodLevel  = 0;
 
     [Header("Current Magic Skill")]
     public MagicSkillType currentMagicSkill = MagicSkillType.BloodSpear;
@@ -61,6 +63,7 @@ public class PlayerMagicSkill : MonoBehaviour
     // ── Eclipse ── (stats TBD)
     // ── Daughter of Dragon ── (stats TBD)
     // ── Steel Blood ── (stats TBD)
+    // ── Heat Blood ── (stats TBD)
     // ── Cold Blood ── (stats TBD)
 
     private float _drainCooldownTimer;
@@ -87,6 +90,7 @@ public class PlayerMagicSkill : MonoBehaviour
         ApplyEclipseLevel(eclipseLevel);
         ApplyDaughterOfDragonLevel(daughterOfDragonLevel);
         ApplySteelBloodLevel(steelBloodLevel);
+        ApplyHeatBloodLevel(heatBloodLevel);
         ApplyColdBloodLevel(coldBloodLevel);
     }
 
@@ -150,6 +154,13 @@ public class PlayerMagicSkill : MonoBehaviour
         // TODO: apply SteelBloodLevel stats
     }
 
+    public void ApplyHeatBloodLevel(int level)
+    {
+        if (magicSkillLevelData == null) return;
+        heatBloodLevel = Mathf.Clamp(level, 0, magicSkillLevelData.MaxHeatBloodLevel);
+        // TODO: apply HeatBloodLevel stats
+    }
+
     public void ApplyColdBloodLevel(int level)
     {
         if (magicSkillLevelData == null) return;
@@ -173,7 +184,8 @@ public class PlayerMagicSkill : MonoBehaviour
             case MagicSkillType.Eclipse: UseEclipse(); break;
             case MagicSkillType.DaughterOfDragon: UseDaughterOfDragon(); break;
             case MagicSkillType.SteelBlood: UseSteelBlood(); break;
-            case MagicSkillType.ColdBlood: UseColdBlood(); break;
+            case MagicSkillType.HeatBlood:  UseHeatBlood();  break;
+            case MagicSkillType.ColdBlood:  UseColdBlood();  break;
         }
     }
 
@@ -301,6 +313,10 @@ public class PlayerMagicSkill : MonoBehaviour
     // ── Steel Blood ───────────────────────────────────────────────────────────
 
     private void UseSteelBlood() { }
+
+    // ── Heat Blood ────────────────────────────────────────────────────────────
+
+    private void UseHeatBlood() { }
 
     // ── Cold Blood ────────────────────────────────────────────────────────────
 

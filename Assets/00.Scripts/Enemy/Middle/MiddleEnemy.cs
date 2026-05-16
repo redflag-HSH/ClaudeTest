@@ -8,7 +8,6 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
     [Header("Stats")]
     public float maxHp = 150f;
     public float CurrentHp { get; private set; }
-    public override bool IsDead { get; set; }
 
     [Header("Patrol")]
     public float patrolSpeed = 2f;

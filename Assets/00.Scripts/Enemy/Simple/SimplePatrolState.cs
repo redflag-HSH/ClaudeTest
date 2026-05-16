@@ -16,7 +16,8 @@ public class SimplePatrolState : BaseState
         if (flee != null) { StateMachine.ChangeState(flee); return; }
 
         float distToPlayer = Vector2.Distance(_e.Transform.position, _e.Player.position);
-        if (distToPlayer <= _e.ChaseRange)
+        bool hit = Physics2D.Raycast(_e.Transform.position, Vector2.down, distToPlayer, _e.GroundLayer);
+        if (distToPlayer <= _e.ChaseRange && !hit)
         {
             StateMachine.ChangeState(new SimpleChaseState(_e));
             return;

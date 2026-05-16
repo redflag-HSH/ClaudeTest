@@ -82,6 +82,11 @@ public class PlayerMagicSkillLevelEditor : EditorWindow
             v  => _target.ApplySteelBloodLevel(v),
             _data.MaxSteelBloodLevel);
         GUILayout.Space(6);
+        DrawBlankPanel("Heat Blood",
+            () => _target.heatBloodLevel,
+            v  => _target.ApplyHeatBloodLevel(v),
+            _data.MaxHeatBloodLevel);
+        GUILayout.Space(6);
         DrawBlankPanel("Cold Blood",
             () => _target.coldBloodLevel,
             v  => _target.ApplyColdBloodLevel(v),

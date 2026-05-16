@@ -37,6 +37,7 @@ public class HedgehogLevel
 [Serializable] public class EclipseLevel          { /* TODO */ }
 [Serializable] public class DaughterOfDragonLevel { /* TODO */ }
 [Serializable] public class SteelBloodLevel       { /* TODO */ }
+[Serializable] public class HeatBloodLevel        { /* TODO */ }
 [Serializable] public class ColdBloodLevel        { /* TODO */ }
 
 [CreateAssetMenu(fileName = "MagicSkillLevelData", menuName = "Player/Magic Skill Level Data")]
@@ -60,6 +61,9 @@ public class MagicSkillLevelData : ScriptableObject
     [Header("Steel Blood Levels")]
     public SteelBloodLevel[] steelBloodLevels = new SteelBloodLevel[1] { new() };
 
+    [Header("Heat Blood Levels")]
+    public HeatBloodLevel[] heatBloodLevels = new HeatBloodLevel[1] { new() };
+
     [Header("Cold Blood Levels")]
     public ColdBloodLevel[] coldBloodLevels = new ColdBloodLevel[1] { new() };
 
@@ -69,6 +73,7 @@ public class MagicSkillLevelData : ScriptableObject
     public int MaxEclipseLevel          => eclipseLevels.Length - 1;
     public int MaxDaughterOfDragonLevel => daughterOfDragonLevels.Length - 1;
     public int MaxSteelBloodLevel       => steelBloodLevels.Length - 1;
+    public int MaxHeatBloodLevel        => heatBloodLevels.Length - 1;
     public int MaxColdBloodLevel        => coldBloodLevels.Length - 1;
 
     public BloodSpearLevel       GetBloodSpear(int l)       => bloodSpearLevels      [Mathf.Clamp(l, 0, MaxBloodSpearLevel)];
@@ -77,5 +82,6 @@ public class MagicSkillLevelData : ScriptableObject
     public EclipseLevel          GetEclipse(int l)          => eclipseLevels         [Mathf.Clamp(l, 0, MaxEclipseLevel)];
     public DaughterOfDragonLevel GetDaughterOfDragon(int l) => daughterOfDragonLevels[Mathf.Clamp(l, 0, MaxDaughterOfDragonLevel)];
     public SteelBloodLevel       GetSteelBlood(int l)       => steelBloodLevels      [Mathf.Clamp(l, 0, MaxSteelBloodLevel)];
+    public HeatBloodLevel        GetHeatBlood(int l)        => heatBloodLevels       [Mathf.Clamp(l, 0, MaxHeatBloodLevel)];
     public ColdBloodLevel        GetColdBlood(int l)        => coldBloodLevels       [Mathf.Clamp(l, 0, MaxColdBloodLevel)];
 }

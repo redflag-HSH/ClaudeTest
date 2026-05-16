@@ -289,6 +289,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Header("References")]
     public Transform hitPoint;
     [SerializeField] private GameObject bloodSpherePrefab;
+    [SerializeField] private Skillwheel skillwheel;
 
     // ���� State ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -357,6 +358,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
         effects = GetComponent<EffectGenerator>();
         bloodPuddleMaker = GetComponent<BloodPuddleMaker>();
         playerMagicSkill = GetComponent<PlayerMagicSkill>();
+        if (skillwheel == null)
+            skillwheel = FindFirstObjectByType<Skillwheel>();
     }
 
     void OnDestroy()
@@ -379,6 +382,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Gather.canceled += OnGatherUp;
         actions.Player2D.Skill.started += OnSkillPress;
         actions.Player2D.Skill.canceled += OnSkillRelease;
+        actions.Player2D.SkillChange.started += OnSkillWheelOpen;
+        actions.Player2D.SkillChange.canceled += OnSkillWheelClose;
         actions.Player2D.GrabThrow.performed += OnGrabThrow;
         actions.Player2D.Enable();
     }
@@ -398,6 +403,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.Gather.canceled -= OnGatherUp;
         actions.Player2D.Skill.started -= OnSkillPress;
         actions.Player2D.Skill.canceled -= OnSkillRelease;
+        actions.Player2D.SkillChange.started -= OnSkillWheelOpen;
+        actions.Player2D.SkillChange.canceled -= OnSkillWheelClose;
         actions.Player2D.GrabThrow.performed -= OnGrabThrow;
         actions.Player2D.Disable();
     }
@@ -614,8 +621,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         if (target.TryGetComponent<EnemySliceable>(out var sliceable))
         {
             Vector2 toEnemy = ((Vector2)target.bounds.center - (Vector2)transform.position).normalized;
-            Vector2 sliceNormal = new Vector2(-toEnemy.y, toEnemy.x);
-            sliceable.Slice(sliceNormal, (Vector2)target.bounds.center, deathblowSliceForce, transform.position);
+            sliceable.Slice(toEnemy, (Vector2)target.bounds.center, deathblowSliceForce, transform.position);
             SpawnBlood((Vector2)target.bounds.center, -toEnemy, sliceable.Money, sliceable.HpHeal);
             if (bloodPuddleMaker != null)
                 bloodPuddleMaker.SpawnStrongPuddle((Vector2)target.bounds.center, sliceable.Money, sliceable.HpHeal);
@@ -627,6 +633,14 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnSkillPress(InputAction.CallbackContext ctx) => playerMagicSkill?.OnMagicSkillPress();
     void OnSkillRelease(InputAction.CallbackContext ctx) => playerMagicSkill?.OnMagicSkillRelease();
+
+    void OnSkillWheelOpen(InputAction.CallbackContext ctx)
+    {
+        if (IsDead || IsStunned || IsDown || isDodging || isAttacking) return;
+        skillwheel?.Open();
+    }
+
+    void OnSkillWheelClose(InputAction.CallbackContext ctx) => skillwheel?.CommitClose();
 
     void OnGatherDown(InputAction.CallbackContext ctx) => _gatherHeld = true;
     void OnGatherUp(InputAction.CallbackContext ctx) { _gatherHeld = false; _gatherHoldTimer = 0f; }
@@ -728,7 +742,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
                 Vector2 toEnemy = ((Vector2)col.bounds.center - (Vector2)transform.position).normalized;
                 float randomAngle = Random.Range(-60f, 60f);
                 Vector2 rotated = Quaternion.AngleAxis(randomAngle, Vector3.forward) * toEnemy;
-                Vector2 sliceNormal = new(-rotated.y, rotated.x);
+                Vector2 sliceNormal = rotated;
                 sliceable.Slice(sliceNormal, col.bounds.center, deathblowSliceForce, transform.position);
                 if (bloodPuddleMaker != null)
                     bloodPuddleMaker.SpawnStrongPuddle(col.bounds.center, sliceable.Money, sliceable.HpHeal);
@@ -752,8 +766,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         // Penetrating ray — hits every enemy along the line
         RaycastHit2D[] hits = Physics2D.RaycastAll(origin, sliceDir, sliceRange, enemyLayer);
 
-        // Cut-plane normal: 90° CCW of the slice direction
-        Vector2 sliceNormal = new Vector2(-sliceDir.y, sliceDir.x);
+        Vector2 sliceNormal = sliceDir;
 
         foreach (var hit in hits)
         {
@@ -930,7 +943,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         // Slice every enemy along the path
         RaycastHit2D[] hits = Physics2D.RaycastAll(origin, dir, dist, enemyLayer);
-        Vector2 sliceNormal = new(-dir.y, dir.x);
+        Vector2 sliceNormal = dir;
         foreach (var hit in hits)
         {
             SpawnBlood(hit.point, hit.normal);
@@ -984,7 +997,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         yield return new WaitForSeconds(risingStartup * ad);
 
         Vector2 origin = (Vector2)transform.position + Vector2.up * 0.4f;
-        HitEnemies(origin, risingRange, risingDamage, new Vector2(FacingDir() * 2f, risingKnockback), bleedDps, bleedDuration);
+        HitEnemies(origin, risingRange, risingDamage, new Vector2(FacingDir() * 2f, risingKnockback), bleedDps, bleedDuration, new Vector2(FacingDir(), 1f).normalized);
 
         yield return new WaitForSeconds(risingRecovery * ad);
         isAttacking = false;
@@ -1008,7 +1021,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         yield return new WaitForSeconds(smashdownStartup * ad);
 
         Vector2 origin = (Vector2)transform.position + Vector2.down * 0.4f;
-        HitEnemies(origin, smashdownRange, smashdownDamage, smashdownKnockback, FacingDir(), bleedDps, bleedDuration);
+        HitEnemies(origin, smashdownRange, smashdownDamage, smashdownKnockback, FacingDir(), bleedDps, bleedDuration, new Vector2(FacingDir(), -1f).normalized);
 
         yield return new WaitForSeconds(smashdownRecovery * ad);
         isAttacking = false;
@@ -1104,7 +1117,16 @@ public class PlayerControl : MonoBehaviour, IDamageable
                 foreach (var col in hits)
                 {
                     if (col.TryGetComponent<IDamageable>(out var target))
+                    {
                         target.TakeDamage(bodySlamDamage);
+                        if (target.IsDead && col.TryGetComponent<EnemySliceable>(out var sliceable))
+                        {
+                            Vector2 slamDir = rb.linearVelocity.sqrMagnitude > 0.01f ? rb.linearVelocity.normalized : Vector2.right * FacingDir();
+                            sliceable.Slice(slamDir, col.bounds.center, deathblowSliceForce, transform.position);
+                            if (bloodPuddleMaker != null)
+                                bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
+                        }
+                    }
 
                     var kbForce = new Vector2(dir * bodySlamKnockback, 2f);
                     if (col.TryGetComponent<IMonsterCore>(out var mm))
@@ -1410,7 +1432,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     // ���� Helpers ������������������������������������������������������������������������������������������������������������������������������
 
-    void HitEnemies(Vector2 origin, float radius, float damage, Vector2 knockbackForce, float bleedDps = 0f, float bleedDuration = 0f)
+    void HitEnemies(Vector2 origin, float radius, float damage, Vector2 knockbackForce, float bleedDps = 0f, float bleedDuration = 0f, Vector2? sliceDir = null)
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(origin, radius, enemyLayer);
         foreach (var col in hits)
@@ -1418,8 +1440,16 @@ public class PlayerControl : MonoBehaviour, IDamageable
             if (col.TryGetComponent<IDamageable>(out var target))
             {
                 target.TakeDamage(damage);
-                if (target.IsDead && bloodPuddleMaker != null)
-                    bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
+                if (target.IsDead && sliceDir != null)
+                {
+                    if (bloodPuddleMaker != null)
+                        bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
+                    if (col.TryGetComponent<EnemySliceable>(out var sliceable))
+                    {
+                        Vector2 d = sliceDir.Value;
+                        sliceable.Slice(d, col.bounds.center, deathblowSliceForce, transform.position);
+                    }
+                }
             }
 
             if (bleedDps > 0f)
@@ -1436,7 +1466,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
     }
 
-    void HitEnemies(Vector2 origin, float radius, float damage, float knockback, int dir, float bleedDps = 0f, float bleedDuration = 0f)
+    void HitEnemies(Vector2 origin, float radius, float damage, float knockback, int dir, float bleedDps = 0f, float bleedDuration = 0f, Vector2? sliceDir = null)
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(origin, radius, enemyLayer);
         foreach (var col in hits)
@@ -1444,8 +1474,16 @@ public class PlayerControl : MonoBehaviour, IDamageable
             if (col.TryGetComponent<IDamageable>(out var target))
             {
                 target.TakeDamage(damage);
-                if (target.IsDead && bloodPuddleMaker != null)
-                    bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
+                if (target.IsDead && sliceDir != null)
+                {
+                    if (bloodPuddleMaker != null)
+                        bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
+                    if (col.TryGetComponent<EnemySliceable>(out var sliceable))
+                    {
+                        Vector2 d = sliceDir.Value;
+                        sliceable.Slice(d, col.bounds.center, deathblowSliceForce, transform.position);
+                    }
+                }
             }
 
             if (bleedDps > 0f)
@@ -1506,6 +1544,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
             actions.Player2D.Enable();
         else
         {
+            skillwheel?.ForceClose();
             actions.Player2D.Disable();
             moveInput = 0f;
             jumpQueued = false;
