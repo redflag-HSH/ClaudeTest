@@ -82,7 +82,7 @@ public class SimpleEnemy : EnemySliceable, IMonsterCore, IDamageable
     float IMonsterCore.NextAttackTime { get => nextAttackTime; set => nextAttackTime = value; }
     LayerMask IMonsterCore.PlayerLayer => playerLayer;
     BaseState IMonsterCore.CreateAttackState() => new SimpleAttackState(this);
-    void IMonsterCore.DeathAnimation() => Slice(Vector2.up);
+    void IMonsterCore.DeathAnimation() => Slice(pendingSliceNormal, pendingSliceContact, pendingSliceForcePower, pendingSlicePlayerPos);
 
     protected override void Awake()
     {

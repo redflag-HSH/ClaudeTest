@@ -16,7 +16,8 @@ public class SimplePatrolState : BaseState
         if (flee != null) { StateMachine.ChangeState(flee); return; }
 
         float distToPlayer = Vector2.Distance(_e.Transform.position, _e.Player.position);
-        bool hit = Physics2D.Raycast(_e.Transform.position, Vector2.down, distToPlayer, _e.GroundLayer);
+        Vector2 dirToPlayer = _e.Player.position - _e.Transform.position;
+        bool hit = Physics2D.Raycast(_e.Transform.position, dirToPlayer.normalized, distToPlayer, _e.GroundLayer);
         if (distToPlayer <= _e.ChaseRange && !hit)
         {
             StateMachine.ChangeState(new SimpleChaseState(_e));
@@ -25,7 +26,7 @@ public class SimplePatrolState : BaseState
 
         float distFromSpawn = _e.Transform.position.x - _e.SpawnPoint.x;
         if (Mathf.Abs(distFromSpawn) >= _e.PatrolDistance)
-            _e.PatrolDir *= -1;
+            _e.PatrolDir = distFromSpawn > 0 ? -1 : 1;
 
         _e.Move(_e.PatrolDir, _e.PatrolSpeed);
     }

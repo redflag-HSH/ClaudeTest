@@ -70,7 +70,7 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
     float IMonsterCore.NextAttackTime { get => nextAttackTime; set => nextAttackTime = value; }
     LayerMask IMonsterCore.PlayerLayer => playerLayer;
     BaseState IMonsterCore.CreateAttackState() => new MiddleAttackState(this);
-    void IMonsterCore.DeathAnimation() => gameObject.SetActive(false);
+    void IMonsterCore.DeathAnimation() { SpawnDeathParts(); gameObject.SetActive(false); }
 
     void IMonsterCore.StartGrab() { }
     void IMonsterCore.Throw(Vector2 velocity, float collisionDamage, float duration, LayerMask enemyLayer) { }
@@ -149,6 +149,14 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
         return max;
     }
 
+    public override void ReceiveLimbDamage(float amount, float stunDuration)
+    {
+        if (IsDead) return;
+        if (EffectGenerator.Instance != null) EffectGenerator.Instance.SpawnBlood(transform.position, Vector2.up);
+        CurrentHp -= amount;
+        if (CurrentHp <= 0f) Die();
+    }
+
     public void ApplyKnockback(Vector2 force, float duration)
     {
         Sm.enabled = false;
@@ -199,7 +207,7 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
 
     public void Move(int dir, float speed)
     {
-        Rb.linearVelocity = new Vector2(dir * speed, Rb.linearVelocity.y);
+        Rb.linearVelocity = new Vector2(dir * speed * LegSpeedMultiplier, Rb.linearVelocity.y);
         FaceDirection(dir);
     }
 

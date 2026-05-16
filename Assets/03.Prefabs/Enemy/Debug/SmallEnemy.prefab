@@ -193,6 +193,7 @@ MonoBehaviour:
   patrolDistance: 4
   chaseRange: 6
   chaseSpeed: 4
+  fleeRange: 3
   attackPatterns:
   - animationName: normal
     range: 2
@@ -201,6 +202,7 @@ MonoBehaviour:
     endDelay: 3
     damage: 10
     knockbackForce: 10
+    stunDuration: 0.1
     attacktype: 0
     projectilePrefab: {fileID: 0}
     projectileSpeed: 0
@@ -211,6 +213,7 @@ MonoBehaviour:
     endDelay: 5
     damage: 15
     knockbackForce: 0
+    stunDuration: 0.1
     attacktype: 1
     projectilePrefab: {fileID: 0}
     projectileSpeed: 0

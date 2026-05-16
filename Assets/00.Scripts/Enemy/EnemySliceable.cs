@@ -45,6 +45,22 @@ public class EnemySliceable : MonoBehaviour
     [SerializeField] private float hpHeal = 0f;
     public float HpHeal => hpHeal;
 
+    // ── Pending Slice ─────────────────────────────────────────────────────────
+
+    // Set these before calling TakeDamage so DeathAnimation uses the correct cut.
+    [HideInInspector] public Vector2 pendingSliceNormal = Vector2.up;
+    [HideInInspector] public Vector2 pendingSliceContact;
+    [HideInInspector] public float pendingSliceForcePower;
+    [HideInInspector] public Vector2 pendingSlicePlayerPos;
+
+    public void SetPendingSlice(Vector2 normal, Vector2 contact, float forcePower, Vector2 playerPos)
+    {
+        pendingSliceNormal = normal;
+        pendingSliceContact = contact;
+        pendingSliceForcePower = forcePower;
+        pendingSlicePlayerPos = playerPos;
+    }
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     // Each slice pair gets a unique sorting order so SpriteMasks only affect

@@ -111,7 +111,11 @@ MonoBehaviour:
   destroyOnSlice: 1
   money: 10
   hpHeal: 0
-  hp: 100
+  pendingSliceNormal: {x: 0, y: 1}
+  pendingSliceContact: {x: 0, y: 0}
+  pendingSliceForcePower: 0
+  pendingSlicePlayerPos: {x: 0, y: 0}
+  hp: 50
   limbPart: 2
 --- !u!68 &2074622272498033399
 EdgeCollider2D:
@@ -268,7 +272,11 @@ MonoBehaviour:
   destroyOnSlice: 1
   money: 10
   hpHeal: 0
-  hp: 100
+  pendingSliceNormal: {x: 0, y: 1}
+  pendingSliceContact: {x: 0, y: 0}
+  pendingSliceForcePower: 0
+  pendingSlicePlayerPos: {x: 0, y: 0}
+  hp: 10000
   limbPart: 1
 --- !u!70 &823475929741129282
 CapsuleCollider2D:
@@ -418,7 +426,11 @@ MonoBehaviour:
   destroyOnSlice: 1
   money: 10
   hpHeal: 0
-  hp: 100
+  pendingSliceNormal: {x: 0, y: 1}
+  pendingSliceContact: {x: 0, y: 0}
+  pendingSliceForcePower: 0
+  pendingSlicePlayerPos: {x: 0, y: 0}
+  hp: 505
   limbPart: 5
 --- !u!68 &9216990483451502366
 EdgeCollider2D:
@@ -574,7 +586,11 @@ MonoBehaviour:
   destroyOnSlice: 1
   money: 10
   hpHeal: 0
-  hp: 100
+  pendingSliceNormal: {x: 0, y: 1}
+  pendingSliceContact: {x: 0, y: 0}
+  pendingSliceForcePower: 0
+  pendingSlicePlayerPos: {x: 0, y: 0}
+  hp: 1000
   limbPart: 0
 --- !u!58 &7018261789012299950
 CircleCollider2D:
@@ -723,7 +739,11 @@ MonoBehaviour:
   destroyOnSlice: 1
   money: 10
   hpHeal: 0
-  hp: 100
+  pendingSliceNormal: {x: 0, y: 1}
+  pendingSliceContact: {x: 0, y: 0}
+  pendingSliceForcePower: 0
+  pendingSlicePlayerPos: {x: 0, y: 0}
+  hp: 505
   limbPart: 3
 --- !u!68 &8882604558804666570
 EdgeCollider2D:
@@ -879,7 +899,11 @@ MonoBehaviour:
   destroyOnSlice: 1
   money: 10
   hpHeal: 0
-  hp: 100
+  pendingSliceNormal: {x: 0, y: 1}
+  pendingSliceContact: {x: 0, y: 0}
+  pendingSliceForcePower: 0
+  pendingSlicePlayerPos: {x: 0, y: 0}
+  hp: 50
   limbPart: 4
 --- !u!68 &4279562302648277751
 EdgeCollider2D:
@@ -976,7 +1000,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e8b9b68ce509a64281ee6009dead578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hp: 300
+  hp: 2000
   sliceableLimbs:
   - {fileID: 4605751903845299890}
   - {fileID: 8350318335899182992}
@@ -985,6 +1009,7 @@ MonoBehaviour:
   - {fileID: 5550094097056953238}
   - {fileID: 6867142303421237528}
   cuttedLimbs: 
+  legSpeedPenalty: 0.5
   maxHp: 150
   patrolSpeed: 2
   patrolDistance: 4
@@ -999,7 +1024,7 @@ MonoBehaviour:
   attackPatterns:
   - animationName: normal
     range: 5
-    lungeForce: 15
+    lungeForce: 2
     windupTime: 1
     endDelay: 2
     damage: 20

@@ -286,6 +286,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Header("Layers")]
     public LayerMask enemyLayer;
 
+    [Header("Blood Sphere")]
+    [SerializeField] private float bloodSphereCooldown = 3f;
+
     [Header("References")]
     public Transform hitPoint;
     [SerializeField] private GameObject bloodSpherePrefab;
@@ -314,6 +317,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     float _smashdownCooldownTimer;
     float _bodySlamCooldownTimer;
     float _grabThrowCooldownTimer;
+    float _bloodSphereCooldownTimer;
 
     int comboStep;
     float comboTimer;
@@ -596,6 +600,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void SphereSummon()
     {
+        if (_bloodSphereCooldownTimer > 0f) return;
+        _bloodSphereCooldownTimer = bloodSphereCooldown;
         Instantiate(bloodSpherePrefab, transform.position, Quaternion.identity);
     }
 
@@ -615,17 +621,17 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         if (target == null) return false;
 
-        if (target.TryGetComponent<IDamageable>(out var damageable))
-            damageable.TakeDamage(99999f);
-
         if (target.TryGetComponent<EnemySliceable>(out var sliceable))
         {
             Vector2 toEnemy = ((Vector2)target.bounds.center - (Vector2)transform.position).normalized;
-            sliceable.Slice(toEnemy, (Vector2)target.bounds.center, deathblowSliceForce, transform.position);
+            sliceable.SetPendingSlice(toEnemy, target.bounds.center, deathblowSliceForce, transform.position);
             SpawnBlood((Vector2)target.bounds.center, -toEnemy, sliceable.Money, sliceable.HpHeal);
             if (bloodPuddleMaker != null)
                 bloodPuddleMaker.SpawnStrongPuddle((Vector2)target.bounds.center, sliceable.Money, sliceable.HpHeal);
         }
+
+        if (target.TryGetComponent<IDamageable>(out var damageable))
+            damageable.TakeDamage(99999f);
 
         AddBloodGage(deathblowBloodGain);
         return true;
@@ -734,44 +740,52 @@ public class PlayerControl : MonoBehaviour, IDamageable
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, berserkerActivationRange, enemyLayer);
         foreach (var col in hits)
         {
-            if (col.TryGetComponent<IDamageable>(out var damageable))
-                damageable.TakeDamage(99999f);
-
             if (col.TryGetComponent<EnemySliceable>(out var sliceable))
             {
                 Vector2 toEnemy = ((Vector2)col.bounds.center - (Vector2)transform.position).normalized;
                 float randomAngle = Random.Range(-60f, 60f);
                 Vector2 rotated = Quaternion.AngleAxis(randomAngle, Vector3.forward) * toEnemy;
-                Vector2 sliceNormal = rotated;
-                sliceable.Slice(sliceNormal, col.bounds.center, deathblowSliceForce, transform.position);
+                sliceable.SetPendingSlice(rotated, col.bounds.center, deathblowSliceForce, transform.position);
                 if (bloodPuddleMaker != null)
                     bloodPuddleMaker.SpawnStrongPuddle(col.bounds.center, sliceable.Money, sliceable.HpHeal);
             }
+
+            if (col.TryGetComponent<IDamageable>(out var damageable))
+                damageable.TakeDamage(99999f);
         }
     }
 
     //���� Slice ����������������������������������������������������������������������������������������������������������������������������������
 
-    void DoSlice(float forcePower = 0f)
+    void DoSlice(float forcePower = 0f, Vector2? attackDir = null)
     {
         Vector2 origin = (Vector2)transform.position + Vector2.up * 0.3f;
 
-        Vector2 mouseWorld = CameraFollow2D.GameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
-        Vector2 sliceDir = (mouseWorld - origin);
-        if (sliceDir.sqrMagnitude < 0.001f) sliceDir = Vector2.right * FacingDir();
-        sliceDir.Normalize();
+        Vector2 sliceDir;
+        if (attackDir.HasValue)
+        {
+            sliceDir = attackDir.Value;
+        }
+        else
+        {
+            Vector2 mouseWorld = CameraFollow2D.GameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+            sliceDir = mouseWorld - origin;
+            if (sliceDir.sqrMagnitude < 0.001f) sliceDir = Vector2.right * FacingDir();
+            sliceDir.Normalize();
+        }
 
         Vector2 endpoint = origin + sliceDir * sliceRange;
 
         // Penetrating ray — hits every enemy along the line
         RaycastHit2D[] hits = Physics2D.RaycastAll(origin, sliceDir, sliceRange, enemyLayer);
 
-        Vector2 sliceNormal = sliceDir;
+        Vector2 sliceNormal = new(-sliceDir.y, sliceDir.x);
 
         foreach (var hit in hits)
         {
             if (hit.collider.TryGetComponent<EnemySliceable>(out var sliceable))
             {
+                sliceable.SetPendingSlice(sliceNormal, hit.point, forcePower, transform.position);
                 SpawnBlood(hit.point, hit.normal, sliceable.Money / 10, sliceable.HpHeal / 10f);
 
                 bool alreadyDead = hit.collider.TryGetComponent<IDamageable>(out var preCheck) && preCheck.IsDead;
@@ -779,11 +793,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
                     d.TakeDamage(sliceDamage);
 
                 bool isDead = alreadyDead || !hit.collider.TryGetComponent<IDamageable>(out var m) || m.IsDead;
-                if (isDead)
-                {
-                    sliceable.Slice(sliceNormal, hit.point, forcePower, transform.position);
-                    if (bloodPuddleMaker != null) bloodPuddleMaker.SpawnStrongPuddle(hit.point, sliceable.Money, sliceable.HpHeal);
-                }
+                if (isDead && bloodPuddleMaker != null)
+                    bloodPuddleMaker.SpawnStrongPuddle(hit.point, sliceable.Money, sliceable.HpHeal);
             }
             else
             {
@@ -834,6 +845,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         // Weak hit
         yield return new WaitForSeconds(hit.startup * ad);
+        MarkSliceDir(HitOrigin(hit.range), hit.range * 0.6f, MouseSliceDir());
         HitEnemies(HitOrigin(hit.range), hit.range * 0.6f, hit.damage, hit.knockback, FacingDir(), bleedDps, bleedDuration);
         DoSlice(hit.damage * sliceForce);
 
@@ -841,6 +853,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         float strongDamage = hit.damage * comboStrongMultiplier;
         yield return new WaitForSeconds(hit.chainGap * ad);
         rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, rb.linearVelocity.y);
+        MarkSliceDir(HitOrigin(heavyRange), heavyRange, MouseSliceDir());
         HitEnemies(HitOrigin(heavyRange), heavyRange, strongDamage, heavyKnockback, FacingDir(), bleedDps, bleedDuration);
         DoSlice(strongDamage * sliceForce);
 
@@ -887,6 +900,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         {
             var h = comboHits.Length > 0 ? comboHits[0] : default;
             yield return new WaitForSeconds(h.startup * ad);
+            MarkSliceDir(HitOrigin(h.range), h.range * 0.6f, MouseSliceDir());
             HitEnemies(HitOrigin(h.range), h.range * 0.6f, h.damage, h.knockback, FacingDir(), bleedDps, bleedDuration);
             DoSlice(h.damage * sliceForce);
             yield return new WaitForSeconds(h.recovery * ad);
@@ -896,6 +910,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, rb.linearVelocity.y);
             yield return new WaitForSeconds(heavyStartupDuration * ad);
+            MarkSliceDir(HitOrigin(heavyRange), heavyRange, MouseSliceDir());
             HitEnemies(HitOrigin(heavyRange), heavyRange, heavyDamage, heavyKnockback, FacingDir(), bleedDps, bleedDuration);
             DoSlice(heavyDamage * sliceForce);
             yield return new WaitForSeconds(0.2f * ad);
@@ -914,6 +929,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         if (_smashdownCooldownTimer > 0f) _smashdownCooldownTimer -= dt;
         if (_bodySlamCooldownTimer > 0f) _bodySlamCooldownTimer -= dt;
         if (_grabThrowCooldownTimer > 0f) _grabThrowCooldownTimer -= dt;
+        if (_bloodSphereCooldownTimer > 0f) _bloodSphereCooldownTimer -= dt;
     }
 
     // ── Quickdraw Skill ───────────────────────────────────────────────────────
@@ -997,7 +1013,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
         yield return new WaitForSeconds(risingStartup * ad);
 
         Vector2 origin = (Vector2)transform.position + Vector2.up * 0.4f;
-        HitEnemies(origin, risingRange, risingDamage, new Vector2(FacingDir() * 2f, risingKnockback), bleedDps, bleedDuration, new Vector2(FacingDir(), 1f).normalized);
+        MarkSliceDir(origin, risingRange, new Vector2(FacingDir(), 1f).normalized);
+        HitEnemies(origin, risingRange, risingDamage, new Vector2(FacingDir() * 2f, risingKnockback), bleedDps, bleedDuration);
+        DoSlice(risingDamage * sliceForce, new Vector2(FacingDir(), 1f).normalized);
 
         yield return new WaitForSeconds(risingRecovery * ad);
         isAttacking = false;
@@ -1021,7 +1039,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
         yield return new WaitForSeconds(smashdownStartup * ad);
 
         Vector2 origin = (Vector2)transform.position + Vector2.down * 0.4f;
-        HitEnemies(origin, smashdownRange, smashdownDamage, smashdownKnockback, FacingDir(), bleedDps, bleedDuration, new Vector2(FacingDir(), -1f).normalized);
+        MarkSliceDir(origin, smashdownRange, new Vector2(FacingDir(), -1f).normalized);
+        HitEnemies(origin, smashdownRange, smashdownDamage, smashdownKnockback, FacingDir(), bleedDps, bleedDuration);
+        DoSlice(smashdownDamage * sliceForce, new Vector2(FacingDir(), -1f).normalized);
 
         yield return new WaitForSeconds(smashdownRecovery * ad);
         isAttacking = false;
@@ -1370,11 +1390,18 @@ public class PlayerControl : MonoBehaviour, IDamageable
     public void AddBloodGage(float amount)
     {
         CurrentBloodGage = Mathf.Min(CurrentBloodGage + amount, maxBloodGage);
-        if (CurrentBloodGage >= maxBloodGage)
+        if (CurrentBloodGage >= maxBloodGage && HasSlayedPart())
         {
             CurrentBloodGage = 0f;
             HealNextBodyPart();
         }
+    }
+
+    bool HasSlayedPart()
+    {
+        for (int i = 0; i < _slayedParts.Length; i++)
+            if (_slayedParts[i]) return true;
+        return false;
     }
 
     void HealNextBodyPart()
@@ -1430,9 +1457,14 @@ public class PlayerControl : MonoBehaviour, IDamageable
         CurrentBloodMoney = Mathf.Max(amount, 0);
     }
 
+    public void SetBloodGage(float amount)
+    {
+        CurrentBloodGage = Mathf.Clamp(amount, 0f, maxBloodGage);
+    }
+
     // ���� Helpers ������������������������������������������������������������������������������������������������������������������������������
 
-    void HitEnemies(Vector2 origin, float radius, float damage, Vector2 knockbackForce, float bleedDps = 0f, float bleedDuration = 0f, Vector2? sliceDir = null)
+    void HitEnemies(Vector2 origin, float radius, float damage, Vector2 knockbackForce, float bleedDps = 0f, float bleedDuration = 0f/*, Vector2? sliceDir = null*/)
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(origin, radius, enemyLayer);
         foreach (var col in hits)
@@ -1440,15 +1472,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
             if (col.TryGetComponent<IDamageable>(out var target))
             {
                 target.TakeDamage(damage);
-                if (target.IsDead && sliceDir != null)
+                if (target.IsDead)
                 {
                     if (bloodPuddleMaker != null)
                         bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
-                    if (col.TryGetComponent<EnemySliceable>(out var sliceable))
-                    {
-                        Vector2 d = sliceDir.Value;
-                        sliceable.Slice(d, col.bounds.center, deathblowSliceForce, transform.position);
-                    }
+                    if (!col.TryGetComponent<IMonsterCore>(out _) && col.TryGetComponent<EnemySliceable>(out var s))
+                        s.Slice(s.pendingSliceNormal, s.pendingSliceContact, s.pendingSliceForcePower, s.pendingSlicePlayerPos);
                 }
             }
 
@@ -1466,7 +1495,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
     }
 
-    void HitEnemies(Vector2 origin, float radius, float damage, float knockback, int dir, float bleedDps = 0f, float bleedDuration = 0f, Vector2? sliceDir = null)
+    void HitEnemies(Vector2 origin, float radius, float damage, float knockback, int dir, float bleedDps = 0f, float bleedDuration = 0f)
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(origin, radius, enemyLayer);
         foreach (var col in hits)
@@ -1474,15 +1503,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
             if (col.TryGetComponent<IDamageable>(out var target))
             {
                 target.TakeDamage(damage);
-                if (target.IsDead && sliceDir != null)
+                if (target.IsDead)
                 {
                     if (bloodPuddleMaker != null)
                         bloodPuddleMaker.SpawnStrongPuddle((Vector2)col.bounds.center);
-                    if (col.TryGetComponent<EnemySliceable>(out var sliceable))
-                    {
-                        Vector2 d = sliceDir.Value;
-                        sliceable.Slice(d, col.bounds.center, deathblowSliceForce, transform.position);
-                    }
+                    if (!col.TryGetComponent<IMonsterCore>(out _) && col.TryGetComponent<EnemySliceable>(out var s))
+                        s.Slice(s.pendingSliceNormal, s.pendingSliceContact, s.pendingSliceForcePower, s.pendingSlicePlayerPos);
                 }
             }
 
@@ -1516,6 +1542,23 @@ public class PlayerControl : MonoBehaviour, IDamageable
         return hitPoint != null
             ? (Vector2)hitPoint.position
             : (Vector2)transform.position + Vector2.right * FacingDir() * range * 0.5f;
+    }
+
+    Vector2 MouseSliceDir()
+    {
+        Vector2 origin = (Vector2)transform.position + Vector2.up * 0.3f;
+        Vector2 mouseWorld = CameraFollow2D.GameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        Vector2 dir = (mouseWorld - origin).normalized;
+        return dir.sqrMagnitude < 0.001f ? Vector2.right * FacingDir() : dir;
+    }
+
+    void MarkSliceDir(Vector2 hitOrigin, float radius, Vector2 cutDir)
+    {
+        Vector2 sliceNormal = new(-cutDir.y, cutDir.x);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(hitOrigin, radius, enemyLayer);
+        foreach (var col in hits)
+            if (col.TryGetComponent<EnemySliceable>(out var s))
+                s.SetPendingSlice(sliceNormal, col.bounds.center, deathblowSliceForce, transform.position);
     }
 
     public void SetNearLadder(bool near)

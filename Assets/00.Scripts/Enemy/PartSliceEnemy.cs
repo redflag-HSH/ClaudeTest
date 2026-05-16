@@ -10,7 +10,24 @@ public class PartSliceEnemy : MonoBehaviour
     public enum Limb { Head, Body, Larm, Rarm, Llegs, Rlegs }
     [SerializeField] protected List<Limb> cuttedLimbs;
 
+    [SerializeField] float legSpeedPenalty = 0.5f;
+
     public bool HasCuttedLimbs => cuttedLimbs != null && cuttedLimbs.Count > 0;
+
+    public virtual void ReceiveLimbDamage(float amount, float stunDuration) { }
+    public PartSliceable LastHitLimb { get; set; }
+
+    public float LegSpeedMultiplier
+    {
+        get
+        {
+            if (cuttedLimbs == null) return 1f;
+            int cut = 0;
+            foreach (var l in cuttedLimbs)
+                if (l == Limb.Llegs || l == Limb.Rlegs) cut++;
+            return Mathf.Max(0.1f, 1f - cut * legSpeedPenalty);
+        }
+    }
 
     void Start()
     {
@@ -24,6 +41,8 @@ public class PartSliceEnemy : MonoBehaviour
 
     public void Cutted(PartSliceable limbPart)
     {
+        if (IsDead) return;
+
         sliceableLimbs.Remove(limbPart);
         print("Cutted " + limbPart.limbPart);
         if (limbPart.limbPart == Limb.Head || limbPart.limbPart == Limb.Body)
@@ -35,8 +54,23 @@ public class PartSliceEnemy : MonoBehaviour
             }
             this.gameObject.SetActive(false);
         }
-        else
+        else if (limbPart.limbPart == Limb.Llegs || limbPart.limbPart == Limb.Rlegs)
+        {
             cuttedLimbs.Add(limbPart.limbPart);
+        }
+    }
+
+    public void SpawnDeathParts()
+    {
+        var limbs = new List<PartSliceable>(sliceableLimbs);
+        foreach (var limb in limbs)
+        {
+            if (limb == null) continue;
+            if (limb == LastHitLimb)
+                limb.Slice(limb.pendingSliceNormal, limb.pendingSliceContact, limb.pendingSliceForcePower, limb.pendingSlicePlayerPos);
+            else
+                limb.SpawnWhole();
+        }
     }
 
     public bool HealRandomLimb()

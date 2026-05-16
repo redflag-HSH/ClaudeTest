@@ -1930,6 +1930,10 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2379647900422562573, guid: 0f1f8039f2740a449ad3b43951d725d2, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2923006984523984890, guid: 0f1f8039f2740a449ad3b43951d725d2, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -3920,24 +3924,7 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 8904567160805936442, guid: 032b00afab2ffd747a67990674a2844e, type: 3}
-      propertyPath: bodySlamDuration
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8904567160805936442, guid: 032b00afab2ffd747a67990674a2844e, type: 3}
-      propertyPath: bodySlamKnockback
-      value: 100
-      objectReference: {fileID: 0}
-    - target: {fileID: 8904567160805936442, guid: 032b00afab2ffd747a67990674a2844e, type: 3}
-      propertyPath: bodySlamSlipSpeed
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 8904567160805936442, guid: 032b00afab2ffd747a67990674a2844e, type: 3}
-      propertyPath: bodySlamSelfKnockback
-      value: 100
-      objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 7192281807952054326, guid: 032b00afab2ffd747a67990674a2844e, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

@@ -17,8 +17,16 @@ public class PartSliceable : EnemySliceable, IDamageable
 
     public void TakeDamage(float damage, float stunDuration = 0f)
     {
+        float before = hp;
         hp -= damage;
-        parent.GetComponent<IDamageable>().TakeDamage(damage, stunDuration);
+        var p = parent;
+        if (p != null)
+        {
+            p.LastHitLimb = this;
+            // propagate only what the limb actually had, so limb death and parent death are independent
+            float propagated = hp > 0f ? damage : Mathf.Max(0f, before);
+            p.ReceiveLimbDamage(propagated, stunDuration);
+        }
         if (hp <= 0)
             IsDead = true;
     }

@@ -278,6 +278,8 @@ MonoBehaviour:
   deathblowRange: 2
   deathblowBloodGain: 50
   deathblowSliceForce: 10
+  deathblowIndicatorPrefab: {fileID: 97023650832417218, guid: e5cee8c546fb43740a56bab294192fd9, type: 3}
+  deathblowIndicatorYOffset: 1.2
   quickdrawRange: 6
   quickdrawDamage: 30
   quickdrawStaminaCost: 30
@@ -292,13 +294,13 @@ MonoBehaviour:
   smashdownRecovery: 0.35
   smashdownCooldown: 1
   bodySlamStaminaCost: 30
-  bodySlamSlipSpeed: 10
-  bodySlamDuration: 0.45
+  bodySlamSlipSpeed: 20
+  bodySlamDuration: 2
   bodySlamHitRadius: 0.55
   bodySlamDamage: 20
-  bodySlamKnockback: 8
+  bodySlamKnockback: 100
   bodySlamSelfDamage: 10
-  bodySlamSelfKnockback: 12
+  bodySlamSelfKnockback: 100
   bodySlamCooldown: 1.5
   grabThrowStaminaCost: 30
   grabThrowCooldown: 1
@@ -341,6 +343,7 @@ MonoBehaviour:
     m_Bits: 256
   hitPoint: {fileID: 0}
   bloodSpherePrefab: {fileID: 8414514281093344269, guid: ed29ae3adb679f942bff974c0011a50a, type: 3}
+  skillwheel: {fileID: 0}
   bloodPuddleMaker: {fileID: 0}
 --- !u!114 &1666599793055766915
 MonoBehaviour:
@@ -361,9 +364,10 @@ MonoBehaviour:
   eclipseLevel: 0
   daughterOfDragonLevel: 0
   steelBloodLevel: 0
+  heatBloodLevel: 0
   coldBloodLevel: 0
   currentMagicSkill: 0
-  bloodSpearPrefab: {fileID: 0}
+  bloodSpearPrefab: {fileID: 6727186645484257039, guid: e4c4ca72e116a4041adae1cb31bd6b6d, type: 3}
   spearCount: 5
   hoverRadius: 1.2
   spearDamage: 30

@@ -12,9 +12,12 @@ public class SmallFleeState : BaseState
     {
         if (_e.IsDead || _e.Player == null) return;
 
-        if (_e.PlayerCtrl == null || !_e.PlayerCtrl.IsBerserker)
+        bool berserker = _e.PlayerCtrl != null && _e.PlayerCtrl.IsBerserker;
+        float dist = Vector2.Distance(_e.transform.position, _e.Player.position);
+
+        if (!berserker && dist > _e.chaseRange)
         {
-            StateMachine.ChangeState(new SimpleChaseState(_e));
+            StateMachine.ChangeState(new SimplePatrolState(_e));
             return;
         }
 

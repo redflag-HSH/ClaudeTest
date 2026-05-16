@@ -259,7 +259,7 @@ public class SaveManager : MonoBehaviour
         player.transform.position = new Vector2(Data.checkpoint.posX, Data.checkpoint.posY);
         player.Heal(Data.playerStats.currentHp - player.CurrentHp);
         player.RestoreStamina(Data.playerStats.currentStamina - player.CurrentStamina);
-        player.AddBloodGage(Data.playerStats.currentBloodGage - player.CurrentBloodGage);
+        player.SetBloodGage(Data.playerStats.currentBloodGage);
         player.SetBloodMoney(Data.playerStats.bloodMoney);
         ApplyInventory();
         ApplyQuests();

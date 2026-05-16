@@ -14,7 +14,7 @@ using TMPro;
 //   Skillwheel  (this MonoBehaviour + CanvasGroup)
 //     SegmentsRoot
 //       Segment_0 … Segment_N   Image, Filled / Radial360
-//         fillAmount  = 1 / skillCount  (≈ 0.143 for 7 skills)
+//         fillAmount  = 1 / skillCount  (0.125 for 8 skills)
 //         Z rotation  = i * (360 / skillCount)
 //       Icon_0 … Icon_N         Image, centered on each segment (optional)
 //     CenterPanel
@@ -58,7 +58,7 @@ public class Skillwheel : MonoBehaviour
 
     [Header("Skill Data")]
     [Tooltip("Entries must match PlayerMagicSkill.MagicSkillType order.")]
-    public SkillEntry[] skills = new SkillEntry[7];
+    public SkillEntry[] skills = new SkillEntry[8];
 
     // ── Settings ───────────────────────────────────────────────────────────────
 

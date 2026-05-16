@@ -18,6 +18,7 @@ public class SmallEnemy : EnemySliceable, IMonsterCore, IDamageable
     [Header("Detection")]
     public float chaseRange = 6f;
     public float chaseSpeed = 4f;
+    public float fleeRange = 3f;
 
     [Header("Attack")]
     public IMonsterCore.AttackPattern[] attackPatterns;
@@ -71,9 +72,14 @@ public class SmallEnemy : EnemySliceable, IMonsterCore, IDamageable
     float IMonsterCore.NextAttackTime { get => nextAttackTime; set => nextAttackTime = value; }
     LayerMask IMonsterCore.PlayerLayer => playerLayer;
     BaseState IMonsterCore.CreateAttackState() => new SmallAttackState(this);
-    BaseState IMonsterCore.CreateFleeState() =>
-        PlayerCtrl != null && PlayerCtrl.IsBerserker ? new SmallFleeState(this) : null;
-    void IMonsterCore.DeathAnimation() => Slice(Vector2.up);
+    BaseState IMonsterCore.CreateFleeState()
+    {
+        if (Player == null) return null;
+        bool berserker = PlayerCtrl != null && PlayerCtrl.IsBerserker;
+        bool tooClose = Vector2.Distance(transform.position, Player.position) <= fleeRange;
+        return berserker && tooClose ? new SmallFleeState(this) : null;
+    }
+    void IMonsterCore.DeathAnimation() => Slice(pendingSliceNormal, pendingSliceContact, pendingSliceForcePower, pendingSlicePlayerPos);
 
     protected override void Awake()
     {
