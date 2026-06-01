@@ -39,6 +39,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Header("Movement")]
     public float speed = 5f;
     public float jumpForce = 10f;
+    public float coyoteTime = 0.12f;
     public Transform groundCheck;
     public LayerMask groundLayer;
 
@@ -71,9 +72,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Header("Body Part Debuffs")]
     [Tooltip("One entry per BodyPart enum value (Head, LeftArm, RightArm, LeftLeg, RightLeg, Torso).")]
     public BodyPartDebuff[] bodyPartDebuffs = new BodyPartDebuff[6];
-
-    [Header("Head — Sight / Sound")]
-    public float headFadeDuration = 0.5f;
 
     // tracks which parts have been slayed this run
     readonly bool[] _slayedParts = new bool[6];
@@ -289,6 +287,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Header("Blood Sphere")]
     [SerializeField] private float bloodSphereCooldown = 3f;
 
+    [Header("Interaction")]
+    public float interactRange = 1.5f;
+    public LayerMask interactLayer;
+    public GameObject interactPrompt;
+
     [Header("References")]
     public Transform hitPoint;
     [SerializeField] private GameObject bloodSpherePrefab;
@@ -296,6 +299,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     // ���� State ����������������������������������������������������������������������������������������������������������������������������������
 
+    public bool IsInCutscene { get; private set; }
     public bool IsInvincible { get; private set; }
     public bool IsGuarding { get; private set; }
     public bool IsStunned { get; private set; }
@@ -327,6 +331,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     float moveInput;
     float climbInput;
     bool jumpQueued;
+    float _coyoteTimer;
     int lastFacingDir = 1;
 
     bool isOnSlope;
@@ -340,6 +345,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     Rigidbody2D rb;
     SpriteRenderer sr;
     _2DActions actions;
+    IInteractable _interactTarget;
     EffectGenerator effects;
     public BloodPuddleMaker bloodPuddleMaker;
     PlayerMagicSkill playerMagicSkill;
@@ -350,6 +356,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+        DontDestroyOnLoad(gameObject);
 
         rb = GetComponent<Rigidbody2D>();
         rb.freezeRotation = true;
@@ -389,6 +396,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.SkillChange.started += OnSkillWheelOpen;
         actions.Player2D.SkillChange.canceled += OnSkillWheelClose;
         actions.Player2D.GrabThrow.performed += OnGrabThrow;
+        actions.Player2D.Interact.performed += OnInteract;
         actions.Player2D.Enable();
     }
 
@@ -410,6 +418,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.SkillChange.started -= OnSkillWheelOpen;
         actions.Player2D.SkillChange.canceled -= OnSkillWheelClose;
         actions.Player2D.GrabThrow.performed -= OnGrabThrow;
+        actions.Player2D.Interact.performed -= OnInteract;
         actions.Player2D.Disable();
     }
 
@@ -427,6 +436,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
         TickBerserker();
         TickStunAccumulator();
         TickSkillCooldowns();
+        TickCoyoteTime();
+        TickInteraction();
         CheckSlope();
     }
 
@@ -516,8 +527,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
             return;
         }
         if (!CanJump) return;
-        if (IsGrounded())
+        if (IsGrounded() || _coyoteTimer > 0f)
+        {
             jumpQueued = true;
+            _coyoteTimer = 0f;
+        }
     }
 
     void OnAttack(InputAction.CallbackContext ctx)
@@ -921,6 +935,14 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
 
     static readonly WaitForSeconds s_quickdrawRecovery = new(0.15f);
+
+    void TickCoyoteTime()
+    {
+        if (IsGrounded())
+            _coyoteTimer = coyoteTime;
+        else if (_coyoteTimer > 0f)
+            _coyoteTimer -= Time.deltaTime;
+    }
 
     void TickSkillCooldowns()
     {
@@ -1370,11 +1392,18 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void TickHpDrain()
     {
-        if (IsDead || hpDrainPerSecond <= 0f || CurrentHp <= hpDrainFloor) return;
+        if (IsDead || IsInCutscene || hpDrainPerSecond <= 0f || CurrentHp <= hpDrainFloor) return;
         CurrentHp = Mathf.Max(CurrentHp - hpDrainPerSecond * Time.deltaTime, hpDrainFloor);
     }
 
     // ���� BloodGage ����������������������������������������������������������������������������������������������������������������������������������
+
+    public void Teleport(Vector2 position)
+    {
+        rb.linearVelocity = Vector2.zero;
+        rb.position = position;
+        transform.position = position;
+    }
 
     public void Heal(float amount)
     {
@@ -1427,8 +1456,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         if (ScreenFader.Instance != null)
         {
-            if (slayed) ScreenFader.Instance.GameFadeIn(headFadeDuration);
-            else ScreenFader.Instance.GameFadeOut(headFadeDuration);
+            if (slayed) ScreenFader.Instance.GameFadeIn();
+            else ScreenFader.Instance.GameFadeOut();
         }
         SoundManager.SetHeadMuffle(slayed);
     }
@@ -1589,10 +1618,35 @@ public class PlayerControl : MonoBehaviour, IDamageable
         {
             skillwheel?.ForceClose();
             actions.Player2D.Disable();
+            actions.Player2D.Interact.Enable();
             moveInput = 0f;
             jumpQueued = false;
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }
+    }
+
+    public void SetCutsceneMode(bool active)
+    {
+        IsInCutscene = active;
+        SetInputEnabled(!active);
+    }
+
+    void OnInteract(InputAction.CallbackContext _)
+    {
+        if (DialogSystem.Instance != null && DialogSystem.Instance.IsOpen)
+        {
+            DialogSystem.Instance.Advance();
+            return;
+        }
+        _interactTarget?.Interact(gameObject);
+    }
+
+    void TickInteraction()
+    {
+        Collider2D hit = Physics2D.OverlapCircle(transform.position, interactRange, interactLayer);
+        _interactTarget = hit != null && hit.TryGetComponent(out IInteractable interactable) ? interactable : null;
+        if (interactPrompt != null)
+            interactPrompt.SetActive(_interactTarget != null && !DialogSystem.Instance.IsOpen);
     }
 
     // ── Body Part Slay ────────────────────────────────────────────────────────

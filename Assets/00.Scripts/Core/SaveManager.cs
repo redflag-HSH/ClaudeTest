@@ -256,7 +256,7 @@ public class SaveManager : MonoBehaviour
         var player = PlayerControl.Instance;
         if (player == null) return;
 
-        player.transform.position = new Vector2(Data.checkpoint.posX, Data.checkpoint.posY);
+        player.Teleport(new Vector2(Data.checkpoint.posX, Data.checkpoint.posY));
         player.Heal(Data.playerStats.currentHp - player.CurrentHp);
         player.RestoreStamina(Data.playerStats.currentStamina - player.CurrentStamina);
         player.SetBloodGage(Data.playerStats.currentBloodGage);

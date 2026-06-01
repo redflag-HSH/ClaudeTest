@@ -152,8 +152,9 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
     public override void ReceiveLimbDamage(float amount, float stunDuration)
     {
         if (IsDead) return;
-        if (EffectGenerator.Instance != null) EffectGenerator.Instance.SpawnBlood(transform.position, Vector2.up);
+        //if (EffectGenerator.Instance != null) EffectGenerator.Instance.SpawnBlood(transform.position, Vector2.up);
         CurrentHp -= amount;
+        Debug.Log(amount + " Damaged! currentHP is " + CurrentHp);
         if (CurrentHp <= 0f) Die();
     }
 
@@ -185,6 +186,7 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
     public void TakeDamage(float amount, float stunDuration = 0f)
     {
         if (IsDead) return;
+        Debug.Log(amount + " Damaged! currentHP is " + CurrentHp);
 
         if (!IsDodging && Random.value < dodgeChance)
         {

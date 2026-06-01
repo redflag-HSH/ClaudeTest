@@ -1,0 +1,23 @@
+using UnityEngine;
+
+/// <summary>
+/// Static data bag written by GameManager before loading the Loading scene,
+/// read and cleared by LoadingScreenUI once it starts.
+/// </summary>
+public static class SceneLoader
+{
+    public static string TargetScene   { get; private set; }
+    public static Vector2? SpawnOverride { get; private set; }
+
+    public static void Set(string scene, Vector2? spawn = null)
+    {
+        TargetScene   = scene;
+        SpawnOverride = spawn;
+    }
+
+    public static void Clear()
+    {
+        TargetScene   = null;
+        SpawnOverride = null;
+    }
+}

@@ -17,6 +17,7 @@ public class HUDDisplay : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        DontDestroyOnLoad(GetComponentInParent<Canvas>().gameObject);
     }
 
     void OnEnable()
@@ -62,5 +63,12 @@ public class HUDDisplay : MonoBehaviour
                 label.text = $"{tag} {quest.text}";
             }
         }
+    }
+
+    // ── Cutscene Animation ─────────────────────────────────────────────────────────────
+    public void Cutscene()
+    {
+        Animator animator = GetComponentInParent<Animator>();
+        animator.SetTrigger("Cutscene");
     }
 }

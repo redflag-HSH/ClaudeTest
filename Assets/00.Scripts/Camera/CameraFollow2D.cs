@@ -3,7 +3,11 @@ using UnityEngine;
 public class CameraFollow2D : MonoBehaviour
 {
     static CameraFollow2D _mainCameraInstance;
-    public static Camera GameCamera => _mainCameraInstance != null ? _mainCameraInstance._cam : null;
+    public static CameraFollow2D Instance => _mainCameraInstance;
+    // Falls back to Camera.main when CameraFollow2D is on a vcam (no Camera component on it)
+    public static Camera GameCamera => (_mainCameraInstance != null && _mainCameraInstance._cam != null)
+        ? _mainCameraInstance._cam
+        : Camera.main;
 
     [Header("Target")]
     public Transform target;
@@ -22,10 +26,21 @@ public class CameraFollow2D : MonoBehaviour
     public bool lockY = false;
 
     [Header("Shake")]
-    public float shakeFrequency = 25f;   // oscillations per second
+    public float shakeFrequency = 25f;
 
     private Camera _cam;
     private float _cameraZ;
+
+    // cutscene state
+    private Transform _cutsceneTarget;
+    private Transform _savedTarget;
+
+    // shake state
+    private float _shakeDuration;
+    private float _shakeTimer;
+    private float _shakeMagnitude;
+    private float _shakeDecay;
+    private Vector2 _shakeOffset;
 
     void Awake()
     {
@@ -33,21 +48,10 @@ public class CameraFollow2D : MonoBehaviour
         _mainCameraInstance = this;
     }
 
-    // shake state
-    private float _shakeDuration;
-    private float _shakeTimer;
-    private float _shakeMagnitude;
-    private float _shakeDecay;           // magnitude lost per second (0 = constant)
-    private Vector2 _shakeOffset;
-
     void Start()
     {
-        if (_mainCameraInstance != null && _mainCameraInstance != this)
-        {
-            Debug.LogWarning("Multiple CameraFollow2D instances marked as main camera! There should only be one. This instance will not function as main camera.", this);
-            return;
-        }
         _mainCameraInstance = this;
+        // When on a vcam, use the vcam's Z; when on the camera directly, use its Z
         _cameraZ = transform.position.z;
 
         if (target == null && PlayerControl.Instance != null)
@@ -58,12 +62,14 @@ public class CameraFollow2D : MonoBehaviour
 
     void LateUpdate()
     {
+        // Cinemachine Brain owns the camera during cutscenes — do nothing
+        if (_cutsceneTarget != null) return;
+
         if (target == null) return;
 
         UpdateShake();
-
-        Vector3 desired = GetDesiredPosition() + (Vector3)_shakeOffset;
-        transform.position = Vector3.Lerp(transform.position, desired, smoothSpeed * Time.deltaTime);
+        Vector3 gameplay = GetDesiredPosition() + (Vector3)_shakeOffset;
+        transform.position = Vector3.Lerp(transform.position, gameplay, smoothSpeed * Time.deltaTime);
     }
 
     void UpdateShake()
@@ -77,13 +83,12 @@ public class CameraFollow2D : MonoBehaviour
         float t = (_shakeDuration - _shakeTimer) * shakeFrequency;
         _shakeOffset = new Vector2(
             Mathf.Sin(t * 1.00f) * currentMag,
-            Mathf.Sin(t * 1.37f) * currentMag   // different frequency on Y for less uniformity
+            Mathf.Sin(t * 1.37f) * currentMag
         );
 
         if (_shakeTimer <= 0f) _shakeOffset = Vector2.zero;
     }
 
-    // Returns the smoothed target position (respects locks and bounds)
     Vector3 GetDesiredPosition()
     {
         float x = lockX ? transform.position.x : target.position.x + offset.x;
@@ -98,22 +103,46 @@ public class CameraFollow2D : MonoBehaviour
         return new Vector3(x, y, _cameraZ);
     }
 
-    // ── Public API ──────────────────────────────────────────────
+    // ── Cutscene API ─────────────────────────────────────────────
 
-    /// <summary>Set a new follow target at runtime.</summary>
+    /// <summary>
+    /// Start following a cutscene vcam. Pass a smoothSpeed override (default uses gameplay speed).
+    /// </summary>
+    public void StartCutscene(Transform vcam)
+    {
+        _savedTarget = target;
+        _cutsceneTarget = vcam;
+        StopShake();
+    }
+
+    /// <summary>
+    /// Switch to a different vcam mid-cutscene (e.g. Timeline vcam change).
+    /// </summary>
+    public void SetCutsceneVCam(Transform vcam) => _cutsceneTarget = vcam;
+
+    /// <summary>
+    /// End cutscene and resume following the saved gameplay target.
+    /// </summary>
+    public void EndCutscene()
+    {
+        _cutsceneTarget = null;
+        target = _savedTarget;
+        _cameraZ = transform.position.z;
+        StopShake();
+    }
+
+    // ── Gameplay API ─────────────────────────────────────────────
+
     public void SetTarget(Transform newTarget) => target = newTarget;
 
-    /// <summary>Snap the camera instantly to the target (no smoothing).</summary>
     public void SnapToTarget()
     {
         if (target == null) return;
         transform.position = GetDesiredPosition();
     }
 
-    /// <summary>Set camera offset from the target.</summary>
     public void SetOffset(Vector2 newOffset) => offset = newOffset;
 
-    /// <summary>Enable or disable world-space camera bounds.</summary>
     public void SetBounds(Vector2 min, Vector2 max)
     {
         minBounds = min;
@@ -123,12 +152,13 @@ public class CameraFollow2D : MonoBehaviour
 
     public void DisableBounds() => useBounds = false;
 
-    /// <summary>Lock or unlock each axis independently.</summary>
     public void SetAxisLock(bool x, bool y) { lockX = x; lockY = y; }
 
     // ── Shake API ────────────────────────────────────────────────
 
-    /// <summary>Shake with constant magnitude for a duration.</summary>
+    public void ShakeTimeLine(float duration) => Shake(duration, 1.0f);
+
+
     public void Shake(float duration, float magnitude)
     {
         _shakeDuration = duration;
@@ -137,16 +167,14 @@ public class CameraFollow2D : MonoBehaviour
         _shakeDecay = 0f;
     }
 
-    /// <summary>Shake that fades out smoothly over the duration.</summary>
     public void ShakeFadeOut(float duration, float magnitude)
     {
         _shakeDuration = duration;
         _shakeTimer = duration;
         _shakeMagnitude = magnitude;
-        _shakeDecay = magnitude / duration;   // reaches 0 at end
+        _shakeDecay = magnitude / duration;
     }
 
-    /// <summary>Stop any ongoing shake immediately.</summary>
     public void StopShake()
     {
         _shakeTimer = 0f;

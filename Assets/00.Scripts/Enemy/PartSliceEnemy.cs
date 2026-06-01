@@ -3,7 +3,6 @@ using UnityEngine;
 
 public class PartSliceEnemy : MonoBehaviour
 {
-    [SerializeField] float hp = 300;
     public virtual bool IsDead { get; set; }
     [SerializeField] List<PartSliceable> sliceableLimbs = new List<PartSliceable>();
     List<PartSliceable> allLimbs;

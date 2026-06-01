@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Playables;
 using UnityEngine.UI;
 
 /// <summary>
@@ -54,6 +55,7 @@ public class DialogSystem : MonoBehaviour
     bool isShowingChoices;
 
     Coroutine typewriterRoutine;
+    PlayableDirector timelineDirector;
 
 
     // ── Unity ─────────────────────────────────────────────────────────────────
@@ -66,6 +68,13 @@ public class DialogSystem : MonoBehaviour
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
+
+    public void OpenFromTimeline(Dialog dialog, PlayableDirector director)
+    {
+        timelineDirector = director;
+        if (timelineDirector != null) timelineDirector.Pause();
+        Open(dialog);
+    }
 
     public void Open(Dialog dialog)
     {
@@ -116,7 +125,15 @@ public class DialogSystem : MonoBehaviour
         ClearChoices();
         dialogPanel.SetActive(false);
         dialogIlust.ToggleShow();
-        if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(true);
+        if (timelineDirector != null)
+        {
+            timelineDirector.Resume();
+            timelineDirector = null;
+        }
+        else
+        {
+            if (PlayerControl.Instance != null) PlayerControl.Instance.SetInputEnabled(true);
+        }
     }
 
     void ShowChoices(DialogChoice[] choices)

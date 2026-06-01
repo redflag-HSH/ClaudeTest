@@ -36,6 +36,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private string _mainMenuScene = "MainMenu";
     [Tooltip("Exact build-settings name of the first gameplay scene")]
     [SerializeField] private string _gameplayScene = "Gameplay";
+    [Tooltip("Leave empty to skip the loading screen and load directly")]
+    [SerializeField] private string _loadingScene = "Loading";
 
     [Header("Game Over")]
     [Tooltip("Seconds between player death and the Game Over screen firing")]
@@ -73,6 +75,7 @@ public class GameManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void Start()
@@ -91,6 +94,7 @@ public class GameManager : MonoBehaviour
     private void OnDestroy()
     {
         if (Instance == this) Instance = null;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -153,19 +157,59 @@ public class GameManager : MonoBehaviour
     // ──────────────────────────────────────────────────────────────
     //  Scene Loading
     // ──────────────────────────────────────────────────────────────
+    private string _pendingTargetScene;
+
     public void LoadScene(string sceneName)
     {
         SetState(GameState.Boot);
-        StartCoroutine(LoadSceneRoutine(sceneName));
+        StartCoroutine(LoadSceneRoutine(sceneName, null));
     }
 
-    private IEnumerator LoadSceneRoutine(string sceneName)
+    public void LoadScene(string sceneName, Vector2 spawnPosition)
     {
-        AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
-        while (!op.isDone) yield return null;
+        SetState(GameState.Boot);
+        StartCoroutine(LoadSceneRoutine(sceneName, spawnPosition));
+    }
 
+    private IEnumerator LoadSceneRoutine(string sceneName, Vector2? spawn)
+    {
         _gameOverTriggered = false;
-        SetState(GameState.Playing);
+
+        if (!string.IsNullOrEmpty(_loadingScene))
+        {
+            _pendingTargetScene = sceneName;
+            SceneLoader.Set(sceneName, spawn);
+            AsyncOperation op = SceneManager.LoadSceneAsync(_loadingScene);
+            while (!op.isDone) yield return null;
+        }
+        else
+        {
+            // No loading scene — direct load
+            AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
+            while (!op.isDone) yield return null;
+
+            ApplySpawnOverride(spawn);
+            SetState(GameState.Playing);
+        }
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Called after LoadingScreenUI activates the real target scene
+        if (scene.name == _loadingScene || scene.name == _mainMenuScene) return;
+        if (_pendingTargetScene != null && scene.name == _pendingTargetScene)
+        {
+            _pendingTargetScene = null;
+            ApplySpawnOverride(SceneLoader.SpawnOverride);
+            SceneLoader.Clear();
+            SetState(GameState.Playing);
+        }
+    }
+
+    private void ApplySpawnOverride(Vector2? spawn)
+    {
+        if (spawn.HasValue && PlayerControl.Instance != null)
+            PlayerControl.Instance.Teleport(spawn.Value);
     }
 
     // ──────────────────────────────────────────────────────────────
