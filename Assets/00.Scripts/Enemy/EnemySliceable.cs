@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // ── Setup ──────────────────────────────────────────────────────────────────────
@@ -104,13 +105,11 @@ public class EnemySliceable : MonoBehaviour
         Collider2D col = GetComponent<Collider2D>();
         if (col != null) col.enabled = false;
 
-        Sprite maskSprite = BuildWhiteSquareSprite();
-
         // Fall back to the enemy's own centre when no contact point is supplied
         Vector2 cp = contactPoint ?? (Vector2)transform.position;
 
-        SpawnHalf(maskSprite, sliceNormal, +1, cp, sliceForcePower, playerPos);
-        SpawnHalf(maskSprite, sliceNormal, -1, cp, sliceForcePower, playerPos);
+        SpawnHalf(sliceNormal, +1, cp, sliceForcePower, playerPos);
+        SpawnHalf(sliceNormal, -1, cp, sliceForcePower, playerPos);
 
         GameManager.Instance.DoHitStop(0.08f);  // brief freeze for impact feel
 
@@ -194,96 +193,121 @@ public class EnemySliceable : MonoBehaviour
 
     // ── Half Creation ─────────────────────────────────────────────────────────
 
-    void SpawnHalf(Sprite maskSprite, Vector2 sliceNormal, int side, Vector2 contactPoint, float sliceForcePower = 0f, Vector2 playerPos = default)
+    void SpawnHalf(Vector2 sliceNormal, int side, Vector2 contactPoint, float sliceForcePower = 0f, Vector2 playerPos = default)
     {
-        Bounds bounds = sr.bounds;                          // world-space bounds
-        float diag = bounds.extents.magnitude * 4f + 1f;   // safely larger than sprite
+        // ── Clip sprite triangles ─────────────────────────────────────────────
+        Vector2[] srcVerts = sr.sprite.vertices;
+        Vector2[] srcUVs   = sr.sprite.uv;
+        ushort[]  srcTris  = sr.sprite.triangles;
 
-        int order = _nextSliceOrder++;
+        Vector2 contactLocal = transform.InverseTransformPoint(contactPoint);
+        Vector2 planeNormal  = sliceNormal * side;
+        float   planeDist    = Vector2.Dot(contactLocal, planeNormal);
 
-        // ── Root (owns Rigidbody2D, moves & rotates freely) ───────────────────
+        var outVerts = new List<Vector2>();
+        var outUVs   = new List<Vector2>();
+        var outTris  = new List<int>();
+
+        for (int t = 0; t < srcTris.Length; t += 3)
+        {
+            var triV = new List<Vector2> { srcVerts[srcTris[t]], srcVerts[srcTris[t+1]], srcVerts[srcTris[t+2]] };
+            var triU = new List<Vector2> { srcUVs[srcTris[t]],   srcUVs[srcTris[t+1]],  srcUVs[srcTris[t+2]]  };
+            ClipPolygon(triV, triU, planeNormal, planeDist);
+            if (triV.Count < 3) continue;
+
+            int baseIdx = outVerts.Count;
+            outVerts.AddRange(triV);
+            outUVs.AddRange(triU);
+            for (int i = 0; i < triV.Count - 2; i++)
+            {
+                outTris.Add(baseIdx);
+                outTris.Add(baseIdx + i + 1);
+                outTris.Add(baseIdx + i + 2);
+            }
+        }
+
+        if (outVerts.Count < 3) return;
+
+        // ── Root ──────────────────────────────────────────────────────────────
         var root = new GameObject($"SlicedHalf_{(side > 0 ? "A" : "B")}");
         root.transform.position = transform.position;
         root.transform.rotation = transform.rotation;
-
         root.gameObject.layer = LayerMask.NameToLayer(layerName);
-
-        // SortingGroup guarantees the SpriteMask below only affects the
-        // SpriteRenderer below — no custom range needed, no cross-bleed possible.
-        var sg = root.AddComponent<UnityEngine.Rendering.SortingGroup>();
-        sg.sortingLayerID = sr.sortingLayerID;
-        sg.sortingOrder = order;
 
         var rb = root.AddComponent<Rigidbody2D>();
         rb.gravityScale = halfGravityScale;
         rb.freezeRotation = false;
         rb.angularVelocity = halfSpin * side;
 
-        // Physical collider — sized to the original sprite bounds so the half
-        // lands and bounces on geometry instead of passing through it.
         var col = root.AddComponent<BoxCollider2D>();
-        col.size = bounds.size;
+        col.size = sr.bounds.size;
         col.sharedMaterial = _halfPhysMat;
 
         Vector2 separateVel = sliceNormal * side * halfSeparationForce;
         separateVel.y += 1.5f;
-
         if (sliceForcePower > 0f)
         {
             Vector2 awayDir = (Vector2)transform.position - playerPos;
             if (awayDir.sqrMagnitude > 0.001f) awayDir.Normalize();
             separateVel += awayDir * sliceForcePower;
         }
-
         rb.linearVelocity = separateVel;
 
-        // ── Sprite child (shows only the half inside the mask) ────────────────
+        // ── Clipped mesh ──────────────────────────────────────────────────────
         var spriteObj = new GameObject("Sprite");
         spriteObj.transform.SetParent(root.transform, false);
-        spriteObj.transform.localScale = transform.localScale;  // preserve enemy scale
+        Vector3 scale = transform.localScale;
+        if (sr.flipX) scale.x *= -1f;
+        if (sr.flipY) scale.y *= -1f;
+        spriteObj.transform.localScale = scale;
 
-        var halfSr = spriteObj.AddComponent<SpriteRenderer>();
-        halfSr.sprite = sr.sprite;
-        halfSr.color = sr.color;
-        halfSr.flipX = sr.flipX;
-        halfSr.flipY = sr.flipY;
-        halfSr.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+        var verts3 = new Vector3[outVerts.Count];
+        for (int i = 0; i < outVerts.Count; i++)
+            verts3[i] = new Vector3(outVerts[i].x, outVerts[i].y, 0f);
 
-        // ── Mask child (covers one side of the cut line) ──────────────────────
-        var maskObj = new GameObject("Mask");
-        maskObj.transform.SetParent(root.transform, false);
+        var mesh = new Mesh();
+        mesh.vertices  = verts3;
+        mesh.uv        = outUVs.ToArray();
+        mesh.triangles = outTris.ToArray();
+        mesh.RecalculateBounds();
+        mesh.RecalculateNormals();
 
-        var mask = maskObj.AddComponent<SpriteMask>();
-        mask.sprite = maskSprite;
-        // No isCustomRangeActive needed — SortingGroup already isolates this mask
-        // so it cannot bleed onto other enemies' sprites.
+        spriteObj.AddComponent<MeshFilter>().mesh = mesh;
 
-        // Project the contact point onto sliceNormal to get the cut depth.
-        // Only this component matters — the lateral offset along the cut line is irrelevant
-        // and would shift the mask sideways, making the cut appear in the wrong place.
-        Vector2 localContact = contactPoint - (Vector2)transform.position;
-        float cutDepth = Vector2.Dot(localContact, sliceNormal);
-        Vector2 maskOffset = sliceNormal * (cutDepth + side * diag * 0.5f);
-        maskObj.transform.localPosition = new Vector3(maskOffset.x, maskOffset.y, 0f);
+        var mat = new Material(sr.sharedMaterial);
+        mat.mainTexture = sr.sprite.texture;
+        mat.color = sr.color;
 
-        // Align mask rotation with the cut direction (cosmetic, square masks work either way)
-        float angle = Mathf.Atan2(sliceNormal.y, sliceNormal.x) * Mathf.Rad2Deg;
-        maskObj.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
-        maskObj.transform.localScale = new Vector3(diag, diag, 1f);
+        var mr = spriteObj.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = mat;
+        mr.sortingLayerID = sr.sortingLayerID;
+        mr.sortingOrder   = sr.sortingOrder;
 
-        // ── Fade & self-destruct ───────────────────────────────────────────────
-        root.AddComponent<SlicedHalf>().Init(halfSr, halfLifetime);
+        root.AddComponent<SlicedHalf>().Init(mat, halfLifetime, sr.color);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // Creates a 1×1 white pixel sprite at runtime — used as the SpriteMask shape.
-    // Scales up to any size because it is a solid colour with no detail.
-    static Sprite BuildWhiteSquareSprite()
+    static void ClipPolygon(List<Vector2> poly, List<Vector2> polyUVs, Vector2 planeNormal, float planeDist)
     {
-        var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-        tex.SetPixel(0, 0, Color.white);
-        tex.Apply();
-        return Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+        var outP = new List<Vector2>();
+        var outU = new List<Vector2>();
+        int n = poly.Count;
+        for (int i = 0; i < n; i++)
+        {
+            Vector2 a = poly[i],       b = poly[(i + 1) % n];
+            Vector2 ua = polyUVs[i],  ub = polyUVs[(i + 1) % n];
+            float da = Vector2.Dot(a, planeNormal) - planeDist;
+            float db = Vector2.Dot(b, planeNormal) - planeDist;
+            if (da >= 0f) { outP.Add(a); outU.Add(ua); }
+            if ((da >= 0f) != (db >= 0f))
+            {
+                float t = da / (da - db);
+                outP.Add(Vector2.Lerp(a, b, t));
+                outU.Add(Vector2.Lerp(ua, ub, t));
+            }
+        }
+        poly.Clear();    poly.AddRange(outP);
+        polyUVs.Clear(); polyUVs.AddRange(outU);
     }
 }

@@ -10,6 +10,8 @@ public class PlayerMagicSkillLevelEditor : EditorWindow
     PlayerMagicSkill    _target;
     MagicSkillLevelData _data;
     Vector2             _scroll;
+    bool                _editMode;
+    SerializedObject    _dataSO;
 
     static readonly Color HeaderColor  = new(0.15f, 0.15f, 0.15f, 0.8f);
     static readonly Color UpgradeColor = new(0.20f, 0.55f, 0.20f, 1f);
@@ -49,50 +51,57 @@ public class PlayerMagicSkillLevelEditor : EditorWindow
 
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
-        // Row 1 — implemented magic skills
-        EditorGUILayout.BeginHorizontal();
-        DrawBloodSpearPanel();
-        GUILayout.Space(6);
-        DrawDrainPanel();
-        EditorGUILayout.EndHorizontal();
+        if (_editMode)
+        {
+            DrawEditLevelsMode();
+        }
+        else
+        {
+            // Row 1 — implemented magic skills
+            EditorGUILayout.BeginHorizontal();
+            DrawBloodSpearPanel();
+            GUILayout.Space(6);
+            DrawDrainPanel();
+            EditorGUILayout.EndHorizontal();
 
-        EditorGUILayout.Space(6);
+            EditorGUILayout.Space(6);
 
-        // Row 2
-        EditorGUILayout.BeginHorizontal();
-        DrawHedgehogPanel();
-        GUILayout.Space(6);
-        DrawBlankPanel("Eclipse",
-            () => _target.eclipseLevel,
-            v  => _target.ApplyEclipseLevel(v),
-            _data.MaxEclipseLevel);
-        GUILayout.Space(6);
-        DrawBlankPanel("Daughter of Dragon",
-            () => _target.daughterOfDragonLevel,
-            v  => _target.ApplyDaughterOfDragonLevel(v),
-            _data.MaxDaughterOfDragonLevel);
-        EditorGUILayout.EndHorizontal();
+            // Row 2
+            EditorGUILayout.BeginHorizontal();
+            DrawHedgehogPanel();
+            GUILayout.Space(6);
+            DrawBlankPanel("Eclipse",
+                () => _target.eclipseLevel,
+                v  => _target.ApplyEclipseLevel(v),
+                _data.MaxEclipseLevel);
+            GUILayout.Space(6);
+            DrawBlankPanel("Daughter of Dragon",
+                () => _target.daughterOfDragonLevel,
+                v  => _target.ApplyDaughterOfDragonLevel(v),
+                _data.MaxDaughterOfDragonLevel);
+            EditorGUILayout.EndHorizontal();
 
-        EditorGUILayout.Space(6);
+            EditorGUILayout.Space(6);
 
-        // Row 3
-        EditorGUILayout.BeginHorizontal();
-        DrawBlankPanel("Steel Blood",
-            () => _target.steelBloodLevel,
-            v  => _target.ApplySteelBloodLevel(v),
-            _data.MaxSteelBloodLevel);
-        GUILayout.Space(6);
-        DrawBlankPanel("Heat Blood",
-            () => _target.heatBloodLevel,
-            v  => _target.ApplyHeatBloodLevel(v),
-            _data.MaxHeatBloodLevel);
-        GUILayout.Space(6);
-        DrawBlankPanel("Cold Blood",
-            () => _target.coldBloodLevel,
-            v  => _target.ApplyColdBloodLevel(v),
-            _data.MaxColdBloodLevel);
-        GUILayout.FlexibleSpace();
-        EditorGUILayout.EndHorizontal();
+            // Row 3
+            EditorGUILayout.BeginHorizontal();
+            DrawBlankPanel("Steel Blood",
+                () => _target.steelBloodLevel,
+                v  => _target.ApplySteelBloodLevel(v),
+                _data.MaxSteelBloodLevel);
+            GUILayout.Space(6);
+            DrawBlankPanel("Heat Blood",
+                () => _target.heatBloodLevel,
+                v  => _target.ApplyHeatBloodLevel(v),
+                _data.MaxHeatBloodLevel);
+            GUILayout.Space(6);
+            DrawBlankPanel("Cold Blood",
+                () => _target.coldBloodLevel,
+                v  => _target.ApplyColdBloodLevel(v),
+                _data.MaxColdBloodLevel);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
 
         EditorGUILayout.EndScrollView();
 
@@ -199,6 +208,39 @@ public class PlayerMagicSkillLevelEditor : EditorWindow
         EditorGUILayout.EndVertical();
     }
 
+    // ── Edit Levels mode (raw array editing) ──────────────────────────────────
+
+    void DrawEditLevelsMode()
+    {
+        if (_dataSO == null || _dataSO.targetObject != _data)
+            _dataSO = new SerializedObject(_data);
+
+        _dataSO.Update();
+
+        DrawLevelArrayEditor("bloodSpearLevels",       "Blood Spear");
+        DrawLevelArrayEditor("drainLevels",             "Drain");
+        DrawLevelArrayEditor("hedgehogLevels",          "Hedgehog");
+        DrawLevelArrayEditor("eclipseLevels",           "Eclipse");
+        DrawLevelArrayEditor("daughterOfDragonLevels",  "Daughter of Dragon");
+        DrawLevelArrayEditor("steelBloodLevels",        "Steel Blood");
+        DrawLevelArrayEditor("heatBloodLevels",         "Heat Blood");
+        DrawLevelArrayEditor("coldBloodLevels",         "Cold Blood");
+
+        if (_dataSO.ApplyModifiedProperties())
+            EditorUtility.SetDirty(_data);
+    }
+
+    void DrawLevelArrayEditor(string propertyName, string title)
+    {
+        var prop = _dataSO.FindProperty(propertyName);
+        if (prop == null) return;
+
+        EditorGUILayout.BeginVertical(GUI.skin.box);
+        EditorGUILayout.PropertyField(prop, new GUIContent($"{title} Levels"), true);
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.Space(4);
+    }
+
     // ── Blank panel (stats TBD) ───────────────────────────────────────────────
 
     void DrawBlankPanel(string title, System.Func<int> getLevel, System.Action<int> applyLevel, int max)
@@ -232,6 +274,8 @@ public class PlayerMagicSkillLevelEditor : EditorWindow
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
         GUILayout.Label("Magic Skill Level Editor", EditorStyles.boldLabel);
         GUILayout.FlexibleSpace();
+        _editMode = GUILayout.Toggle(_editMode, _editMode ? "Mode: Edit Levels" : "Mode: Level Up/Down",
+            EditorStyles.toolbarButton, GUILayout.Width(140));
         if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(60)))
             Repaint();
         EditorGUILayout.EndHorizontal();

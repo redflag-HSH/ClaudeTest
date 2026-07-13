@@ -39,6 +39,13 @@ public class PlayerStatShower : MonoBehaviour
     [Header("Blood Money")]
     [SerializeField] private TextMeshProUGUI bloodMoneyText;  // shows "NNN L"
 
+    [Header("Sunproof Guard Bar")]
+    [SerializeField] private Slider sunproofGuardBar;
+    [SerializeField] private Color sunproofGuardColor = Color.white;
+
+    [Header("Quick Slots (3 icons)")]
+    [SerializeField] private Image[] quickSlotIcons = new Image[3];
+
     [Header("Low-Stat Flash")]
     [SerializeField, Range(0f, 1f)] private float lowHpThreshold = 0.22f;
     [SerializeField, Range(0f, 1f)] private float lowStaminaThreshold = 0.20f;
@@ -51,12 +58,17 @@ public class PlayerStatShower : MonoBehaviour
 
     // ── Unity ─────────────────────────────────────────────────────────────────
 
+    void OnEnable()  => ItemConsumer.OnQuickSlotsChanged += RefreshQuickSlots;
+    void OnDisable() => ItemConsumer.OnQuickSlotsChanged -= RefreshQuickSlots;
+
     void Start()
     {
         combat ??= PlayerControl.Instance;
 
         if (combat == null)
             Debug.LogWarning("PlayerStatShower: no PlayerControl found.", this);
+
+        RefreshQuickSlots();
     }
 
     void Update()
@@ -77,6 +89,18 @@ public class PlayerStatShower : MonoBehaviour
 
         if (bloodMoneyText != null)
             bloodMoneyText.text = $"{combat.CurrentBloodMoney} L";
+
+        if (sunproofGuardBar != null)
+        {
+            bool active = combat.maxSunproofGuard > 0f;
+            sunproofGuardBar.gameObject.SetActive(active);
+            if (active)
+            {
+                sunproofGuardBar.value = combat.CurrentSunproofGuard / combat.maxSunproofGuard;
+                Image fill = sunproofGuardBar.fillRect != null ? sunproofGuardBar.fillRect.GetComponent<Image>() : null;
+                if (fill != null) fill.color = sunproofGuardColor;
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -113,5 +137,22 @@ public class PlayerStatShower : MonoBehaviour
     {
         if (label == null) return;
         label.text = $"{Mathf.CeilToInt(current)} / {Mathf.CeilToInt(max)}";
+    }
+
+    void RefreshQuickSlots()
+    {
+        ItemConsumer consumer = PlayerControl.Instance != null
+            ? PlayerControl.Instance.GetComponent<ItemConsumer>()
+            : null;
+
+        for (int i = 0; i < quickSlotIcons.Length; i++)
+        {
+            Image icon = quickSlotIcons[i];
+            if (icon == null) continue;
+
+            Inventory.InventorySlot slot = consumer?.GetQuickSlot(i);
+            icon.sprite  = slot?.icon;
+            icon.enabled = slot?.icon != null;
+        }
     }
 }

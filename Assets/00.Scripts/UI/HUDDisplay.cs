@@ -15,7 +15,7 @@ public class HUDDisplay : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this) { Destroy(GetComponentInParent<Canvas>().gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(GetComponentInParent<Canvas>().gameObject);
     }

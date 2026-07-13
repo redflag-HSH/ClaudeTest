@@ -51,6 +51,7 @@ public class SmallEnemy : EnemySliceable, IMonsterCore, IDamageable
     float _knockbackTimer;
 
     bool IMonsterCore.IsBleeding { get => IsBleeding; set { IsBleeding = value; if (!value && sr != null) sr.color = Color.white; } }
+    bool IMonsterCore.IsAwareOfPlayer { get; set; }
     void IMonsterCore.ApplyBloodloss(float dps, float duration) => ApplyBloodloss(dps, duration);
     Transform IMonsterCore.Transform => transform;
     Rigidbody2D IMonsterCore.Rb => Rb;
@@ -72,7 +73,7 @@ public class SmallEnemy : EnemySliceable, IMonsterCore, IDamageable
     float IMonsterCore.NextAttackTime { get => nextAttackTime; set => nextAttackTime = value; }
     LayerMask IMonsterCore.PlayerLayer => playerLayer;
     BaseState IMonsterCore.CreateAttackState() => new SmallAttackState(this);
-    BaseState IMonsterCore.CreateFleeState()
+    public BaseState CreateFleeState()
     {
         if (Player == null) return null;
         bool berserker = PlayerCtrl != null && PlayerCtrl.IsBerserker;

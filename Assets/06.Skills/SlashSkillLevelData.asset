@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45265a2107af3134bbb6a520936d863f, type: 3}
+  m_Name: SlashSkillLevelData
+  m_EditorClassIdentifier: 
+  quickdrawLevels:
+  - range: 6
+    damage: 30
+    staminaCost: 30
+    cooldown: 1
+  risingAttackLevels:
+  - damage: 20
+    range: 1
+    knockback: 12
+    staminaCost: 20
+    startup: 0.08
+    recovery: 0.3
+  smashdownLevels:
+  - damage: 25
+    range: 0.9
+    knockback: 6
+    staminaCost: 20
+    startup: 0.1
+    recovery: 0.35
+    cooldown: 1
+  bodySlamLevels:
+  - staminaCost: 30
+    slipSpeed: 10
+    duration: 0.45
+    hitRadius: 0.55
+    damage: 20
+    knockback: 8
+    selfDamage: 10
+    selfKnockback: 12
+    cooldown: 1.5
+  grabThrowLevels:
+  - staminaCost: 30
+    cooldown: 1
+    startup: 0.3
+    grabRange: 1.5
+    throwForce: 14
+    throwCollisionDamage: 25
+    throwDuration: 0.8

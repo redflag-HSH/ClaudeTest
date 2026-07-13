@@ -12,6 +12,7 @@ public class MiddleAttackState : BaseState
 
     public override void Enter()
     {
+        ((IMonsterCore)_e).IsAwareOfPlayer = true;
         if (Time.time >= _e.nextAttackTime)
         {
             bool playerIsDown = _e.PlayerCtrl != null && _e.PlayerCtrl.IsDown;

@@ -12,6 +12,7 @@ public class SimpleAttackState : BaseState
 
     public override void Enter()
     {
+        _e.IsAwareOfPlayer = true;
         if (Time.time >= _e.NextAttackTime)
         {
             _pattern = _e.PickRandomPattern();

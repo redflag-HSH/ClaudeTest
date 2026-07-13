@@ -11,6 +11,8 @@ public class Item : MonoBehaviour, IInteractable
 
     [Header("Item Info")]
     public string itemName = "Item";
+    [Tooltip("Unique numeric ID. Must match the IUsableItem.ItemCode on the effect script. 0 = name-only matching.")]
+    public int itemCode = 0;
     [TextArea] public string description = "";
     public ItemType itemType = ItemType.Collectible;
     public Sprite icon;

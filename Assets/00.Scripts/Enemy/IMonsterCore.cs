@@ -8,13 +8,14 @@ public interface IMonsterCore
     bool IsDead { get; set; }
     LayerMask GroundLayer { get; }
 
+    // Awareness
+    bool IsAwareOfPlayer { get; set; }
+
     // Effect
     bool IsBleeding { get; set; }
     void ApplyBloodloss(float dps, float duration);
 
-    // Grab / Throw / Knockback
-    void StartGrab();
-    void Throw(Vector2 velocity, float collisionDamage, float duration, LayerMask enemyLayer);
+    // Knockback
     void ApplyKnockback(Vector2 force, float duration);
 
     [System.Serializable]

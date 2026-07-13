@@ -14,6 +14,7 @@ public class Inventory : MonoBehaviour
     public class InventorySlot
     {
         public string itemName;
+        public int itemCode;
         public string description;
         public Item.ItemType itemType;
         public Sprite icon;
@@ -24,6 +25,7 @@ public class Inventory : MonoBehaviour
         public InventorySlot(Item item)
         {
             itemName    = item.itemName;
+            itemCode    = item.itemCode;
             description = item.description;
             itemType    = item.itemType;
             icon        = item.icon;
@@ -55,11 +57,10 @@ public class Inventory : MonoBehaviour
             AddItem(item);
     }
 
-    /// <summary>Add an item directly.</summary>
+    /// <summary>Add an item directly. Stacks by code if code > 0, otherwise by name.</summary>
     public bool AddItem(Item item)
     {
-        // Stack existing slot of the same name
-        InventorySlot existing = slots.Find(s => s.itemName == item.itemName);
+        InventorySlot existing = FindSlot(item.itemCode, item.itemName);
         if (existing != null)
         {
             existing.quantity++;
@@ -81,10 +82,10 @@ public class Inventory : MonoBehaviour
         return true;
     }
 
-    /// <summary>Remove one of an item by name. Returns true if removed.</summary>
-    public bool RemoveItem(string itemName)
+    /// <summary>Remove one of an item by code (preferred) or name. Returns true if removed.</summary>
+    public bool RemoveItem(int itemCode, string itemName = null)
     {
-        InventorySlot slot = slots.Find(s => s.itemName == itemName);
+        InventorySlot slot = FindSlot(itemCode, itemName);
         if (slot == null) return false;
 
         slot.quantity--;
@@ -92,35 +93,55 @@ public class Inventory : MonoBehaviour
             slots.Remove(slot);
 
         onItemRemoved.Invoke(slot);
-        Debug.Log($"[Inventory] Removed: {itemName}");
+        Debug.Log($"[Inventory] Removed: {slot.itemName}");
         return true;
     }
 
-    /// <summary>
-    /// Use a Usable item by name (removes one from inventory).
-    /// Returns false if not found or wrong type.
-    /// </summary>
-    public bool UseItem(string itemName)
+    /// <summary>Remove one of an item by name. Returns true if removed.</summary>
+    public bool RemoveItem(string itemName) => RemoveItem(0, itemName);
+
+    /// <summary>Use a Usable item by code or name (removes one). Returns false if not found or wrong type.</summary>
+    public bool UseItem(int itemCode, string itemName = null)
     {
-        InventorySlot slot = slots.Find(s => s.itemName == itemName && s.itemType == Item.ItemType.Usable);
-        if (slot == null)
+        InventorySlot slot = FindSlot(itemCode, itemName);
+        if (slot == null || slot.itemType != Item.ItemType.Usable)
         {
-            Debug.Log($"[Inventory] Cannot use '{itemName}' – not found or not Usable.");
+            Debug.Log($"[Inventory] Cannot use '{itemName ?? itemCode.ToString()}' – not found or not Usable.");
             return false;
         }
 
-        Debug.Log($"[Inventory] Used: {itemName}");
-        return RemoveItem(itemName);
+        Debug.Log($"[Inventory] Used: {slot.itemName}");
+        return RemoveItem(itemCode, itemName);
     }
 
-    /// <summary>Check if the inventory contains at least one of an item.</summary>
-    public bool HasItem(string itemName) => slots.Exists(s => s.itemName == itemName);
+    /// <summary>Use a Usable item by name.</summary>
+    public bool UseItem(string itemName) => UseItem(0, itemName);
 
-    /// <summary>Total quantity of an item across all stacks.</summary>
-    public int GetQuantity(string itemName)
+    /// <summary>Check if inventory contains at least one item matching code or name.</summary>
+    public bool HasItem(int itemCode, string itemName = null) => FindSlot(itemCode, itemName) != null;
+
+    /// <summary>Check if inventory contains at least one item by name.</summary>
+    public bool HasItem(string itemName) => HasItem(0, itemName);
+
+    /// <summary>Total quantity by code or name.</summary>
+    public int GetQuantity(int itemCode, string itemName = null) => FindSlot(itemCode, itemName)?.quantity ?? 0;
+
+    /// <summary>Total quantity by name.</summary>
+    public int GetQuantity(string itemName) => GetQuantity(0, itemName);
+
+    /// <summary>
+    /// Finds a slot by code first (if code > 0), then falls back to name.
+    /// </summary>
+    public InventorySlot FindSlot(int itemCode, string itemName = null)
     {
-        InventorySlot slot = slots.Find(s => s.itemName == itemName);
-        return slot?.quantity ?? 0;
+        if (itemCode > 0)
+        {
+            InventorySlot byCode = slots.Find(s => s.itemCode == itemCode);
+            if (byCode != null) return byCode;
+        }
+        if (!string.IsNullOrEmpty(itemName))
+            return slots.Find(s => s.itemName == itemName);
+        return null;
     }
 
     // ── Save / load helpers (used by InventorySave) ──────────────────────────

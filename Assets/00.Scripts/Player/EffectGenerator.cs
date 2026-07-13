@@ -29,9 +29,15 @@ public class EffectGenerator : MonoBehaviour
     // Reused fallback wait — avoids allocating a new WaitForSeconds each call
     static readonly WaitForSeconds s_fallbackWait = new WaitForSeconds(2f);
 
+    [Header("death Blowm Indicator")]
+    public GameObject deathBlowIndicatorPrefab;
+    private GameObject _deathBlowIndicator;
+    private Transform _deathBlowIndicatorTarget;
+
     void Awake()
     {
         Instance = this;
+        TurnDeathBlowIndicator(false);
         _bloodPool = new ObjectPool<GameObject>(
             createFunc: CreateBlood,
             actionOnGet: OnGet,
@@ -41,6 +47,11 @@ public class EffectGenerator : MonoBehaviour
             defaultCapacity: bloodPoolSize / 2,
             maxSize: bloodPoolSize
         );
+    }
+    void Update()
+    {
+        if (_deathBlowIndicatorTarget != null)
+            _deathBlowIndicator.transform.position = _deathBlowIndicatorTarget.position;
     }
 
     public void SpawnHedgehogSpike(Vector2 origin, Vector2 target, float speed)
@@ -142,4 +153,26 @@ public class EffectGenerator : MonoBehaviour
         if (obj != null && _bloodPool != null)
             _bloodPool.Release(obj);
     }
+
+
+    // ── Death Blow Indicator ──────────────────────────────────────────────────────────
+
+    public void TurnDeathBlowIndicator(bool onOff)
+    {
+        if (_deathBlowIndicator == null)
+        {
+            if (deathBlowIndicatorPrefab == null) return;
+            _deathBlowIndicator = Instantiate(deathBlowIndicatorPrefab);
+        }
+
+        _deathBlowIndicator.SetActive(onOff);
+        if (!onOff)
+            _deathBlowIndicatorTarget = null;
+    }
+    public void SetTargetOfDeathBlowIndicator(Transform target)
+    {
+        _deathBlowIndicatorTarget = target;
+        TurnDeathBlowIndicator(true);
+    }
+
 }

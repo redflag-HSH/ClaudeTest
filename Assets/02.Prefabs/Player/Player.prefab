@@ -1,5 +1,68 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &622985448927476943
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5731335908046836660}
+  - component: {fileID: 9079407945284597211}
+  - component: {fileID: 1679086700858165053}
+  m_Layer: 3
+  m_Name: ItemUseContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5731335908046836660
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 622985448927476943}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5495993288126155284}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9079407945284597211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 622985448927476943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9776026806d64541aaeca193500440d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemName: Sun Cream
+  itemCode: 1
+--- !u!114 &1679086700858165053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 622985448927476943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ade82907550fc44fbf793ae1ebab979, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemName: Blood Pack
+  itemCode: 0
+  healAmount: 30
+  healCap: 0
 --- !u!1 &2411665042042783815
 GameObject:
   m_ObjectHideFlags: 0
@@ -58,8 +121,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.26, y: 0.26, z: 0.26}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 5495993288126155284}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -107,7 +170,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
+  m_Sprite: {fileID: 4723107735738678597, guid: 6e1416cb41fb0004d945a8deeb97a747, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -134,6 +197,7 @@ GameObject:
   - component: {fileID: 2066494960463635378}
   - component: {fileID: 8555762823017640695}
   - component: {fileID: 8788877873197591842}
+  - component: {fileID: -337010228891502761}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -156,6 +220,7 @@ Transform:
   m_Children:
   - {fileID: 4583999904734796748}
   - {fileID: 2075499046566458636}
+  - {fileID: 5731335908046836660}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8904567160805936442
@@ -237,42 +302,32 @@ MonoBehaviour:
     attackDelayMultiplier: 0
     dodgeDelayMultiplier: 0
     stunMultiplier: 0
-  headFadeDuration: 0.5
   stunDuration: 0.6
   downThreshold: 2.5
   stunDecayRate: 1
   hpDrainPerSecond: 1.5
   hpDrainFloor: 1
+  maxSunproofGuard: 100
   lightStaminaCost: 12
   comboWindowDuration: 0.5
-  comboStrongMultiplier: 1.5
   comboHits:
   - damage: 10
     range: 1
     knockback: 3
     startup: 0.08
-    chainGap: 0.08
     recovery: 0.15
   - damage: 15
     range: 1.1
     knockback: 4
     startup: 0.1
-    chainGap: 0.1
     recovery: 0.18
   - damage: 20
     range: 1.2
     knockback: 5
     startup: 0.12
-    chainGap: 0.12
     recovery: 0.25
   runSpeedMultiplier: 1.6
   runHoldTime: 0.3
-  heavyDamage: 40
-  heavyStaminaCost: 24
-  heavyRange: 1.3
-  heavyKnockback: 7
-  heavyStartupDuration: 0.25
-  heavySliceForcePower: 9
   bleedDps: 5
   bleedDuration: 4
   deathblowRange: 2
@@ -339,7 +394,15 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 256
+  passthroughPlatformLayer:
+    serializedVersion: 2
+    m_Bits: 448
   bloodSphereCooldown: 3
+  interactRange: 1.5
+  interactLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  interactPrompt: {fileID: 0}
   hitPoint: {fileID: 0}
   bloodSpherePrefab: {fileID: 8414514281093344269, guid: ed29ae3adb679f942bff974c0011a50a, type: 3}
   skillwheel: {fileID: 0}
@@ -404,6 +467,7 @@ MonoBehaviour:
   slicedRightLegPrefab: {fileID: 5352444568768156612, guid: ba6eab4edb6698343a11b56142db4606, type: 3}
   bloodPrefab: {fileID: 4323636704276381050, guid: 79a51c295a497814f9f731bf5a306442, type: 3}
   bloodPoolSize: 20
+  deathBlowIndicatorPrefab: {fileID: 97023650832417218, guid: e5cee8c546fb43740a56bab294192fd9, type: 3}
 --- !u!114 &7690886032564729842
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -519,3 +583,18 @@ MonoBehaviour:
   fadeStartRatio: 0.65
   scaleVariance: 0.3
   poolSize: 15
+--- !u!114 &-337010228891502761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5880577157139174101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13403d0684a66b040b0da879c58ccb3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  usableItemImpls:
+  - {fileID: 1679086700858165053}
+  - {fileID: 9079407945284597211}

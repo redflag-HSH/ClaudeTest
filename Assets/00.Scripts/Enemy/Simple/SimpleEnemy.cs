@@ -61,6 +61,7 @@ public class SimpleEnemy : EnemySliceable, IMonsterCore, IDamageable
 
     // IMonsterCore
     bool IMonsterCore.IsBleeding { get => IsBleeding; set { IsBleeding = value; if (!value && sr != null) sr.color = Color.white; } }
+    bool IMonsterCore.IsAwareOfPlayer { get; set; }
     void IMonsterCore.ApplyBloodloss(float dps, float duration) => ApplyBloodloss(dps, duration);
     Transform IMonsterCore.Transform => transform;
     Rigidbody2D IMonsterCore.Rb => Rb;

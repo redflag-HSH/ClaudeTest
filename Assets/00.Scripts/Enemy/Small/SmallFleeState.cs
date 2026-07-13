@@ -6,7 +6,7 @@ public class SmallFleeState : BaseState
 
     public SmallFleeState(SmallEnemy e) => _e = e;
 
-    public override void Enter() { }
+    public override void Enter() { ((IMonsterCore)_e).IsAwareOfPlayer = true; }
 
     public override void Perform()
     {

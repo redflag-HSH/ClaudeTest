@@ -50,6 +50,11 @@ public class SlicedHalf : MonoBehaviour
         StartCoroutine(FadeAndDestroy(pieceRenderer, lifetime));
     }
 
+    public void Init(Material mat, float lifetime, Color startColor)
+    {
+        StartCoroutine(FadeAndDestroyMat(mat, lifetime, startColor));
+    }
+
     void OnEnable()
     {
         // Prune destroyed entries
@@ -83,6 +88,25 @@ public class SlicedHalf : MonoBehaviour
             target.TakeDamage(damage);
 
         DisableHitbox();
+    }
+
+    IEnumerator FadeAndDestroyMat(Material mat, float lifetime, Color startColor)
+    {
+        float elapsed   = 0f;
+        float fadeStart = lifetime * 0.55f;
+        while (elapsed < lifetime)
+        {
+            elapsed += Time.deltaTime;
+            if (mat != null && elapsed > fadeStart)
+            {
+                float t = (elapsed - fadeStart) / (lifetime - fadeStart);
+                Color c = startColor;
+                c.a = Mathf.Lerp(1f, 0f, t);
+                mat.color = c;
+            }
+            yield return null;
+        }
+        Destroy(gameObject);
     }
 
     IEnumerator FadeAndDestroy(SpriteRenderer pieceRenderer, float lifetime)

@@ -49,6 +49,7 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
     float _knockbackTimer;
 
     bool IMonsterCore.IsBleeding { get => IsBleeding; set => IsBleeding = value; }
+    bool IMonsterCore.IsAwareOfPlayer { get; set; }
     void IMonsterCore.ApplyBloodloss(float dps, float duration) => ApplyBloodloss(dps, duration);
     Transform IMonsterCore.Transform => transform;
     Rigidbody2D IMonsterCore.Rb => Rb;
@@ -71,9 +72,6 @@ public class MiddleEnemy : PartSliceEnemy, IMonsterCore, IDamageable
     LayerMask IMonsterCore.PlayerLayer => playerLayer;
     BaseState IMonsterCore.CreateAttackState() => new MiddleAttackState(this);
     void IMonsterCore.DeathAnimation() { SpawnDeathParts(); gameObject.SetActive(false); }
-
-    void IMonsterCore.StartGrab() { }
-    void IMonsterCore.Throw(Vector2 velocity, float collisionDamage, float duration, LayerMask enemyLayer) { }
 
     void Awake()
     {

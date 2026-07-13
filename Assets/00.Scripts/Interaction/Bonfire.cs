@@ -96,6 +96,7 @@ public class Bonfire : MonoBehaviour, IInteractable
         player.DeactivateBerserker();
         HealPlayer(player);
         RestoreStamina(player);
+        RestoreSunproofGuard(player);
         player.RestoreAllLimbs();
         player.RestoreBerserker();
         player.SetBloodGage(savedBloodGage);
@@ -123,6 +124,11 @@ public class Bonfire : MonoBehaviour, IInteractable
     private void RestoreStamina(PlayerControl player)
     {
         player.RestoreStamina(player.maxStamina);
+    }
+
+    private void RestoreSunproofGuard(PlayerControl player)
+    {
+        player.SetSunproofGuard(player.maxSunproofGuard);
     }
 
     private void SaveGame()

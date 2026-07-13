@@ -162,7 +162,7 @@ public class GameManager : MonoBehaviour
     public void LoadScene(string sceneName)
     {
         SetState(GameState.Boot);
-        StartCoroutine(LoadSceneRoutine(sceneName, null));
+        StartCoroutine(LoadSceneRoutine(sceneName, Vector2.zero));
     }
 
     public void LoadScene(string sceneName, Vector2 spawnPosition)

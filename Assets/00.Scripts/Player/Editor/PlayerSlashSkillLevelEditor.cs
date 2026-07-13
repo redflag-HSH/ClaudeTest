@@ -10,6 +10,8 @@ public class PlayerSlashSkillLevelEditor : EditorWindow
     PlayerSlashSkill    _target;
     SlashSkillLevelData _data;
     Vector2             _scroll;
+    bool                _editMode;
+    SerializedObject    _dataSO;
 
     static readonly Color HeaderColor  = new(0.15f, 0.15f, 0.15f, 0.8f);
     static readonly Color UpgradeColor = new(0.20f, 0.55f, 0.20f, 1f);
@@ -49,29 +51,36 @@ public class PlayerSlashSkillLevelEditor : EditorWindow
 
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
-        // Row 1
-        EditorGUILayout.BeginHorizontal();
-        DrawQuickdrawPanel();
-        GUILayout.Space(6);
-        DrawRisingAttackPanel();
-        EditorGUILayout.EndHorizontal();
+        if (_editMode)
+        {
+            DrawEditLevelsMode();
+        }
+        else
+        {
+            // Row 1
+            EditorGUILayout.BeginHorizontal();
+            DrawQuickdrawPanel();
+            GUILayout.Space(6);
+            DrawRisingAttackPanel();
+            EditorGUILayout.EndHorizontal();
 
-        EditorGUILayout.Space(6);
+            EditorGUILayout.Space(6);
 
-        // Row 2
-        EditorGUILayout.BeginHorizontal();
-        DrawSmashdownPanel();
-        GUILayout.Space(6);
-        DrawBodySlamPanel();
-        EditorGUILayout.EndHorizontal();
+            // Row 2
+            EditorGUILayout.BeginHorizontal();
+            DrawSmashdownPanel();
+            GUILayout.Space(6);
+            DrawBodySlamPanel();
+            EditorGUILayout.EndHorizontal();
 
-        EditorGUILayout.Space(6);
+            EditorGUILayout.Space(6);
 
-        // Row 3
-        EditorGUILayout.BeginHorizontal();
-        DrawGrabThrowPanel();
-        GUILayout.FlexibleSpace();
-        EditorGUILayout.EndHorizontal();
+            // Row 3
+            EditorGUILayout.BeginHorizontal();
+            DrawGrabThrowPanel();
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
 
         EditorGUILayout.EndScrollView();
 
@@ -84,6 +93,36 @@ public class PlayerSlashSkillLevelEditor : EditorWindow
             _target.ApplySlashLevels();
             EditorUtility.SetDirty(_target);
         }
+    }
+
+    // ── Edit Levels mode (raw array editing) ──────────────────────────────────
+
+    void DrawEditLevelsMode()
+    {
+        if (_dataSO == null || _dataSO.targetObject != _data)
+            _dataSO = new SerializedObject(_data);
+
+        _dataSO.Update();
+
+        DrawLevelArrayEditor("quickdrawLevels",    "Quickdraw");
+        DrawLevelArrayEditor("risingAttackLevels", "Rising Attack");
+        DrawLevelArrayEditor("smashdownLevels",    "Smashdown");
+        DrawLevelArrayEditor("bodySlamLevels",     "Body Slam");
+        DrawLevelArrayEditor("grabThrowLevels",    "Grab Throw");
+
+        if (_dataSO.ApplyModifiedProperties())
+            EditorUtility.SetDirty(_data);
+    }
+
+    void DrawLevelArrayEditor(string propertyName, string title)
+    {
+        var prop = _dataSO.FindProperty(propertyName);
+        if (prop == null) return;
+
+        EditorGUILayout.BeginVertical(GUI.skin.box);
+        EditorGUILayout.PropertyField(prop, new GUIContent($"{title} Levels"), true);
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.Space(4);
     }
 
     // ── Skill panels ──────────────────────────────────────────────────────────
@@ -243,6 +282,8 @@ public class PlayerSlashSkillLevelEditor : EditorWindow
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
         GUILayout.Label("Slash Skill Level Editor", EditorStyles.boldLabel);
         GUILayout.FlexibleSpace();
+        _editMode = GUILayout.Toggle(_editMode, _editMode ? "Mode: Edit Levels" : "Mode: Level Up/Down",
+            EditorStyles.toolbarButton, GUILayout.Width(140));
         if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(60)))
             Repaint();
         EditorGUILayout.EndHorizontal();

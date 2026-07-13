@@ -6,7 +6,7 @@ public class SimplePatrolState : BaseState
 
     public SimplePatrolState(IMonsterCore e) => _e = e;
 
-    public override void Enter() { }
+    public override void Enter() { _e.IsAwareOfPlayer = false; }
 
     public override void Perform()
     {
@@ -17,8 +17,12 @@ public class SimplePatrolState : BaseState
 
         float distToPlayer = Vector2.Distance(_e.Transform.position, _e.Player.position);
         Vector2 dirToPlayer = _e.Player.position - _e.Transform.position;
+
+        float facingDir = Mathf.Sign(_e.Transform.localScale.x);
+        bool playerInFront = Mathf.Sign(dirToPlayer.x) == facingDir;
+
         bool hit = Physics2D.Raycast(_e.Transform.position, dirToPlayer.normalized, distToPlayer, _e.GroundLayer);
-        if (distToPlayer <= _e.ChaseRange && !hit)
+        if (distToPlayer <= _e.ChaseRange && !hit && playerInFront)
         {
             StateMachine.ChangeState(new SimpleChaseState(_e));
             return;

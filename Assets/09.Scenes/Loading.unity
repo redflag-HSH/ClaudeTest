@@ -395,7 +395,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   progressBar: {fileID: 1007577619}
-  minDisplayTime: 3
+  minDisplayTime: 2
   canvasGroup: {fileID: 732671819}
   fadeDuration: 0.1
 --- !u!1 &778658562

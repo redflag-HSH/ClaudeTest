@@ -27,6 +27,8 @@ public class DialogIlust : MonoBehaviour
         leftHasSpoken = false;
         rightHasSpoken = false;
         ToggleShow();
+        if (DialogSystem.Instance != null)
+            DialogSystem.Instance.dialogIlust = this;
     }
 
     public void Apply(DialogLine line)
@@ -85,9 +87,9 @@ public class DialogIlust : MonoBehaviour
 
         if (!isActive) return;
 
-        leftHasSpoken  = false;
+        leftHasSpoken = false;
         rightHasSpoken = false;
-        SetAlpha(portraitLeft,  0f);
+        SetAlpha(portraitLeft, 0f);
         SetAlpha(portraitRight, 0f);
     }
 }

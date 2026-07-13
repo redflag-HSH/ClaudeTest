@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using TMPro;
+using UnityEngine.SceneManagement;
+
 
 public class UIDisplay : MonoBehaviour
 {
     [Header("References")]
     public Inventory inventory;
-    public GameObject slotPrefab;
 
     [Header("UI Panels")]
     public GameObject PanelContainer;
@@ -18,21 +18,21 @@ public class UIDisplay : MonoBehaviour
     public GameObject quitPanel;
     public GameObject gameOverPanel;
 
-    [Header("InventoryUI Elements")]
-    public Transform slotContainer;
-    public ScrollRect scrollView;
-    public GridLayoutGroup gridLayout;
-    public TextMeshProUGUI itemCountText;
-    public Button quitPanelQuitButton;
+    [Header("Inventory Slots")]
+    public Transform[] slotPositions;   // pre-placed empty slot transforms in the UI
+    public GameObject itemSlotPrefab; // prefab with InventoryItemButton component
 
-    [Header("InventoryGrid")]
-    public int columnCount = 4;
-    public Vector2 cellSize = new(80f, 80f);
-    public Vector2 spacing = new(8f, 8f);
+    [Header("Quick Slots")]
+    public QuickSlotButton[] quickSlotButtons = new QuickSlotButton[3];
+
+    [Header("Other")]
+    public Button quitPanelQuitButton;
 
     private bool PanelOpen = false;
     private int currentPanelIndex = 0;
     private GameObject[] panels;
+
+    private readonly Dictionary<string, GameObject> _slotButtons = new();
 
     _2DActions actions;
 
@@ -51,6 +51,7 @@ public class UIDisplay : MonoBehaviour
         actions.Player2D.Enable();
         GameManager.OnPlayerDied += ShowGameOverScreen;
         quitPanelQuitButton.onClick.AddListener(() => GameManager.Instance.GoToMainMenu());
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     void OnDisable()
@@ -60,6 +61,17 @@ public class UIDisplay : MonoBehaviour
         actions.Player2D.Disable();
         GameManager.OnPlayerDied -= ShowGameOverScreen;
         quitPanelQuitButton.onClick.RemoveListener(() => GameManager.Instance.GoToMainMenu());
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Time.timeScale = 1f;
+        PanelOpen = false;
+        currentPanelIndex = 0;
+        CloseAllPanels();
+        HideGameOverScreen();
+        if (PanelContainer != null) PanelContainer.SetActive(false);
     }
 
     void OnEscape(InputAction.CallbackContext ctx) => ToggleMenu();
@@ -86,14 +98,6 @@ public class UIDisplay : MonoBehaviour
 
         inventory.onItemAdded.AddListener(_ => RefreshDisplay());
         inventory.onItemRemoved.AddListener(_ => RefreshDisplay());
-
-        if (gridLayout != null)
-        {
-            gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            gridLayout.constraintCount = columnCount;
-            gridLayout.cellSize = cellSize;
-            gridLayout.spacing = spacing;
-        }
 
         panels = new GameObject[] { inventoryPanel, skillPanel, optionPanel, quitPanel };
 
@@ -177,60 +181,32 @@ public class UIDisplay : MonoBehaviour
 
     public void RefreshDisplay()
     {
-        ClearSlots();
+        ClearButtons();
 
-        IReadOnlyList<Inventory.InventorySlot> slots = inventory.Slots;
-
-        foreach (Inventory.InventorySlot slot in slots)
-            CreateSlotUI(slot);
-
-        UpdateItemCount(slots.Count);
-
-        if (scrollView != null)
-            scrollView.verticalNormalizedPosition = 1f;
-    }
-
-    public void HighlightItem(string itemName)
-    {
-        foreach (Transform child in slotContainer)
+        foreach (var slot in inventory.Slots)
         {
-            bool match = child.name == itemName;
-            child.GetComponent<Image>().color = match ? Color.yellow : Color.white;
-        }
-    }
-
-    // ── Inventory Helpers ─────────────────────────────────────────────────────
-
-    private void CreateSlotUI(Inventory.InventorySlot slot)
-    {
-        GameObject slotObj = Instantiate(slotPrefab, slotContainer);
-        slotObj.name = slot.itemName;
-
-        Image icon = slotObj.transform.Find("Icon")?.GetComponent<Image>();
-        if (icon != null)
-        {
-            icon.sprite = slot.icon;
-            icon.enabled = slot.icon != null;
+            if (slot.itemCode < 0 || slot.itemCode >= slotPositions.Length) continue;
+            SpawnButton(slot, slotPositions[slot.itemCode]);
         }
 
-        TextMeshProUGUI label = slotObj.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
-        if (label != null)
-            label.text = slot.itemName;
-
-        TextMeshProUGUI qty = slotObj.transform.Find("Quantity")?.GetComponent<TextMeshProUGUI>();
-        if (qty != null)
-            qty.text = slot.quantity > 1 ? $"x{slot.quantity}" : "";
+        foreach (var qsb in quickSlotButtons)
+            if (qsb != null) qsb.Refresh();
     }
 
-    private void ClearSlots()
+    private void SpawnButton(Inventory.InventorySlot slot, Transform slotTransform)
     {
-        foreach (Transform child in slotContainer)
-            Destroy(child.gameObject);
+        if (itemSlotPrefab == null || slotTransform == null) return;
+
+        GameObject btn = Instantiate(itemSlotPrefab, slotTransform);
+        btn.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+        btn.GetComponent<InventoryItemButton>()?.Setup(slot);
+        _slotButtons[slot.itemName] = btn;
     }
 
-    private void UpdateItemCount(int count)
+    private void ClearButtons()
     {
-        if (itemCountText != null)
-            itemCountText.text = $"{count} / {inventory.maxSlots}";
+        foreach (var btn in _slotButtons.Values)
+            if (btn != null) Destroy(btn);
+        _slotButtons.Clear();
     }
 }

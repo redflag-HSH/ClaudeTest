@@ -6,7 +6,7 @@ public class SimpleChaseState : BaseState
 
     public SimpleChaseState(IMonsterCore e) => _e = e;
 
-    public override void Enter() { }
+    public override void Enter() { _e.IsAwareOfPlayer = true; }
 
     public override void Perform()
     {

@@ -7,12 +7,11 @@ public enum BodyPart { Head, LeftArm, RightArm, LeftLeg, RightLeg, Torso }
 [System.Serializable]
 public struct ComboHit
 {
-    public float damage;
+    public float damage;    // overlap circle damage (slice damage is shared via sliceDamage field)
     public float range;
     public float knockback;
-    public float startup;    // seconds before weak hit fires
-    public float chainGap;   // seconds between weak and strong hit
-    public float recovery;   // seconds after strong hit (next combo window opens)
+    public float startup;
+    public float recovery;
 }
 
 [System.Serializable]
@@ -133,14 +132,19 @@ public class PlayerControl : MonoBehaviour, IDamageable
     [Tooltip("HP drain cannot reduce HP below this value.")]
     public float hpDrainFloor = 1f;
 
+    // ── Sunproof Guard ────────────────────────────────────────────────────────
+
+    [Header("Sunproof Guard")]
+    [Tooltip("Maximum sunproof guard. Set to 0 to disable.")]
+    public float maxSunproofGuard = 0f;
+    public float CurrentSunproofGuard { get; private set; }
+
     // ���� Light Attack ��������������������������������������������������������������������������������������������������������������������
 
     [Header("Combo")]
     public float lightStaminaCost = 20f;
     public float comboWindowDuration = 0.5f;
-    [Tooltip("Strong hit damage = weak hit damage × this multiplier.")]
-    public float comboStrongMultiplier = 1.5f;
-    [Tooltip("Each entry is one combo step — each step fires weak then strong.")]
+    [Tooltip("Each entry is one combo step — fires overlap + slice simultaneously.")]
     public ComboHit[] comboHits = new ComboHit[3];
 
     // ── Run ───────────────────────────────────────────────────────────────────
@@ -154,16 +158,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
     bool _isRunning;
     float _runHoldTimer;
     bool _shiftDown;
-
-    // ───── Heavy Attack ──────────────────────────────────────────────────────
-
-    [Header("Heavy Attack")]
-    public float heavyDamage = 40f;
-    public float heavyStaminaCost = 45f;
-    public float heavyRange = 1.3f;
-    public float heavyKnockback = 7f;
-    public float heavyStartupDuration = 0.25f;
-    public float heavySliceForcePower = 9f;
 
     // ── Bloodloss ─────────────────────────────────────────────────────────────
 
@@ -283,6 +277,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     [Header("Layers")]
     public LayerMask enemyLayer;
+    [Tooltip("Platform layers the player should pass through while on a ladder.")]
+    public LayerMask passthroughPlatformLayer;
 
     [Header("Blood Sphere")]
     [SerializeField] private float bloodSphereCooldown = 3f;
@@ -339,6 +335,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     bool isNearLadder;
     bool isOnLadder;
+    Ladder _currentLadder;
 
     LineRenderer slashLine;
 
@@ -349,6 +346,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
     EffectGenerator effects;
     public BloodPuddleMaker bloodPuddleMaker;
     PlayerMagicSkill playerMagicSkill;
+    ImsiIlustChanger _illustChanger;
+    ItemConsumer _itemConsumer;
 
     // ���� Unity ����������������������������������������������������������������������������������������������������������������������������������
 
@@ -363,12 +362,15 @@ public class PlayerControl : MonoBehaviour, IDamageable
         sr = GetComponent<SpriteRenderer>();
         CurrentHp = maxHp;
         CurrentStamina = maxStamina;
+        CurrentSunproofGuard = maxSunproofGuard;
 
         actions = new _2DActions();
         slashLine = BuildSlashLine();
         effects = GetComponent<EffectGenerator>();
         bloodPuddleMaker = GetComponent<BloodPuddleMaker>();
         playerMagicSkill = GetComponent<PlayerMagicSkill>();
+        _illustChanger = GetComponent<ImsiIlustChanger>();
+        _itemConsumer  = GetComponent<ItemConsumer>();
         if (skillwheel == null)
             skillwheel = FindFirstObjectByType<Skillwheel>();
     }
@@ -397,11 +399,18 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.SkillChange.canceled += OnSkillWheelClose;
         actions.Player2D.GrabThrow.performed += OnGrabThrow;
         actions.Player2D.Interact.performed += OnInteract;
+        actions.Player2D.UseItem1.performed += OnUseItem1;
+        actions.Player2D.UseItem2.performed += OnUseItem2;
+        actions.Player2D.UseItem3.performed += OnUseItem3;
         actions.Player2D.Enable();
+        GameManager.OnStateChanged += OnGameStateChanged;
+        if (GameManager.Instance != null && GameManager.Instance.State == GameManager.GameState.Boot)
+            SetInputEnabled(false);
     }
 
     void OnDisable()
     {
+        GameManager.OnStateChanged -= OnGameStateChanged;
         actions.Player2D.Move.performed -= OnMove;
         actions.Player2D.Move.canceled -= OnMove;
         actions.Player2D.Jump.performed -= OnJump;
@@ -419,6 +428,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
         actions.Player2D.SkillChange.canceled -= OnSkillWheelClose;
         actions.Player2D.GrabThrow.performed -= OnGrabThrow;
         actions.Player2D.Interact.performed -= OnInteract;
+        actions.Player2D.UseItem1.performed -= OnUseItem1;
+        actions.Player2D.UseItem2.performed -= OnUseItem2;
+        actions.Player2D.UseItem3.performed -= OnUseItem3;
         actions.Player2D.Disable();
     }
 
@@ -437,7 +449,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
         TickStunAccumulator();
         TickSkillCooldowns();
         TickCoyoteTime();
+        TickDeathblowIndicator();
         TickInteraction();
+        TickRender();
         CheckSlope();
     }
 
@@ -446,13 +460,30 @@ public class PlayerControl : MonoBehaviour, IDamageable
         if (IsDead) return;
         if (isDodging || isSlamming) return;
 
-        if (isNearLadder && !isOnLadder && climbInput != 0f && !AllLimbsCut)
-            EnterLadder();
-
         if (isOnLadder)
         {
             rb.gravityScale = 0f;
-            rb.linearVelocity = new Vector2(moveInput * EffectiveSpeed, climbInput * climbSpeed);
+            rb.linearVelocity = new Vector2(0f, climbInput * climbSpeed);
+
+            // Snap horizontal position to ladder
+            if (_currentLadder != null)
+                rb.position = new Vector2(_currentLadder.LadderX, rb.position.y);
+
+            // Auto-exit at bottom
+            if (_currentLadder != null && rb.position.y <= _currentLadder.BottomY)
+            {
+                ExitLadder();
+                return;
+            }
+
+            // Auto-exit at top — place player above the ladder
+            if (_currentLadder != null && rb.position.y >= _currentLadder.TopY)
+            {
+                rb.position = new Vector2(_currentLadder.LadderX, _currentLadder.TopY);
+                ExitLadder();
+                return;
+            }
+
             return;
         }
 
@@ -511,6 +542,9 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         if (_isRunning && climbInput > 0.5f && prevClimbInput <= 0.5f && !isDodging && !IsGuarding && !IsStunned)
             BodySlamSkill();
+
+        if (isNearLadder && !isOnLadder && _currentLadder != null && !AllLimbsCut && climbInput != 0f && prevClimbInput == 0f)
+            GrabLadder();
     }
 
     void OnJump(InputAction.CallbackContext ctx)
@@ -523,7 +557,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         if (isOnLadder)
         {
             ExitLadder();
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, EffectiveJumpForce * 0.6f);
+            rb.linearVelocity = new Vector2(-lastFacingDir * EffectiveSpeed, EffectiveJumpForce * 0.6f);
             return;
         }
         if (!CanJump) return;
@@ -536,6 +570,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void OnAttack(InputAction.CallbackContext ctx)
     {
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
         if (isDodging || IsGuarding || IsStunned || IsDown) return;
 
         if (IsBerserker) { ShootSwordAura(); return; }
@@ -545,27 +581,13 @@ public class PlayerControl : MonoBehaviour, IDamageable
         if (climbInput > 0.5f && CanWeakAttack) { RisingAttackSkill(); return; }
         if (climbInput < -0.5f && CanWeakAttack && !IsGrounded()) { SmashdownSkill(); return; }
 
-        // Queue next combo hit while an attack is already running
         if (isAttacking) { comboInputQueued = true; return; }
 
-        bool doWeak = CanWeakAttack;
-        bool doStrong = CanStrongAttack;
-        if (!doWeak && !doStrong) return;
+        if (!CanWeakAttack && !CanStrongAttack) return;
+        if (!SpendStamina(lightStaminaCost)) return;
 
-        // Both arms — combo (each step = weak → strong)
-        if (doWeak && doStrong)
-        {
-            if (!SpendStamina(lightStaminaCost + heavyStaminaCost)) return;
-            comboStep = 0;
-            StartCoroutine(ComboCoroutine());
-        }
-        else
-        {
-            // One arm cut — fall back to single chain
-            float cost = (doWeak ? lightStaminaCost : 0f) + (doStrong ? heavyStaminaCost : 0f);
-            if (!SpendStamina(cost)) return;
-            StartCoroutine(ChainAttackCoroutine(doWeak, doStrong));
-        }
+        comboStep = 0;
+        StartCoroutine(ComboCoroutine());
     }
 
 
@@ -606,6 +628,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
         isParryActive = false;
     }
 
+    void OnGameStateChanged(GameManager.GameState state)
+    {
+        SetInputEnabled(state != GameManager.GameState.Boot);
+    }
+
     void OnGather(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
     {
         if (!TryDeathblow())
@@ -619,33 +646,61 @@ public class PlayerControl : MonoBehaviour, IDamageable
         Instantiate(bloodSpherePrefab, transform.position, Quaternion.identity);
     }
 
+    void TickDeathblowIndicator()
+    {
+        if (effects == null) return;
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, deathblowRange, enemyLayer);
+
+        Collider2D best = null;
+        float bestDist = float.MaxValue;
+        foreach (var col in hits)
+        {
+            var mm = col.GetComponentInParent<IMonsterCore>();
+            if (mm == null || mm.MonsterType == IMonsterCore.Type.boss || (!mm.IsBleeding && mm.IsAwareOfPlayer)) continue;
+            float d = Vector2.Distance(transform.position, col.bounds.center);
+            if (d < bestDist) { bestDist = d; best = col; }
+        }
+
+        if (best != null)
+            effects.SetTargetOfDeathBlowIndicator(best.transform);
+        else
+            effects.TurnDeathBlowIndicator(false);
+    }
+
     bool TryDeathblow()
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, deathblowRange, enemyLayer);
+        Debug.Log($"[Deathblow] hits={hits.Length}, range={deathblowRange}, layer={enemyLayer.value}");
 
         Collider2D target = null;
         float bestDist = float.MaxValue;
         foreach (var col in hits)
         {
-            bool bleeding = col.TryGetComponent<IMonsterCore>(out var mm) && mm.IsBleeding;
-            if (!bleeding) continue;
+            var mm = col.GetComponentInParent<IMonsterCore>();
+            Debug.Log($"[Deathblow] col={col.name} mm={mm != null} bleeding={mm?.IsBleeding} aware={mm?.IsAwareOfPlayer}");
+            if (mm == null || mm.MonsterType == IMonsterCore.Type.boss || (!mm.IsBleeding && mm.IsAwareOfPlayer)) continue;
             float d = Vector2.Distance(transform.position, col.bounds.center);
             if (d < bestDist) { bestDist = d; target = col; }
         }
 
-        if (target == null) return false;
+        if (target == null) { Debug.Log("[Deathblow] no eligible target"); return false; }
 
-        if (target.TryGetComponent<EnemySliceable>(out var sliceable))
+        var sliceable2 = target.GetComponentInParent<EnemySliceable>();
+        if (sliceable2 != null)
         {
             Vector2 toEnemy = ((Vector2)target.bounds.center - (Vector2)transform.position).normalized;
-            sliceable.SetPendingSlice(toEnemy, target.bounds.center, deathblowSliceForce, transform.position);
-            SpawnBlood((Vector2)target.bounds.center, -toEnemy, sliceable.Money, sliceable.HpHeal);
+            sliceable2.SetPendingSlice(toEnemy, target.bounds.center, deathblowSliceForce, transform.position);
+            SpawnBlood((Vector2)target.bounds.center, -toEnemy, sliceable2.Money, sliceable2.HpHeal);
             if (bloodPuddleMaker != null)
-                bloodPuddleMaker.SpawnStrongPuddle((Vector2)target.bounds.center, sliceable.Money, sliceable.HpHeal);
+                bloodPuddleMaker.SpawnStrongPuddle((Vector2)target.bounds.center, sliceable2.Money, sliceable2.HpHeal);
         }
 
-        if (target.TryGetComponent<IDamageable>(out var damageable))
-            damageable.TakeDamage(99999f);
+        var damageable2 = target.GetComponentInParent<IDamageable>();
+        if (damageable2 != null)
+            damageable2.TakeDamage(99999f);
+        else
+            Debug.LogWarning("[Deathblow] no IDamageable found on target or parent");
 
         AddBloodGage(deathblowBloodGain);
         return true;
@@ -857,19 +912,11 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
         var hit = comboHits[comboStep];
 
-        // Weak hit
         yield return new WaitForSeconds(hit.startup * ad);
-        MarkSliceDir(HitOrigin(hit.range), hit.range * 0.6f, MouseSliceDir());
-        HitEnemies(HitOrigin(hit.range), hit.range * 0.6f, hit.damage, hit.knockback, FacingDir(), bleedDps, bleedDuration);
-        DoSlice(hit.damage * sliceForce);
 
-        // Strong hit
-        float strongDamage = hit.damage * comboStrongMultiplier;
-        yield return new WaitForSeconds(hit.chainGap * ad);
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, rb.linearVelocity.y);
-        MarkSliceDir(HitOrigin(heavyRange), heavyRange, MouseSliceDir());
-        HitEnemies(HitOrigin(heavyRange), heavyRange, strongDamage, heavyKnockback, FacingDir(), bleedDps, bleedDuration);
-        DoSlice(strongDamage * sliceForce);
+        MarkSliceDir(HitOrigin(hit.range), hit.range, MouseSliceDir());
+        HitEnemies(HitOrigin(hit.range), hit.range, hit.damage, hit.knockback, FacingDir(), bleedDps, bleedDuration);
+        DoSlice(sliceDamage * sliceForce);
 
         yield return new WaitForSeconds(hit.recovery * ad);
 
@@ -880,7 +927,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
             comboStep++;
             comboTimer = comboWindowDuration;
             comboInputQueued = false;
-            if (SpendStamina(lightStaminaCost + heavyStaminaCost))
+            if (SpendStamina(lightStaminaCost))
                 StartCoroutine(ComboCoroutine());
         }
         else
@@ -903,38 +950,20 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
     }
 
-    // ── Chain Attack ──────────────────────────────────────────────────────────
-
-    IEnumerator ChainAttackCoroutine(bool doWeak, bool doStrong)
-    {
-        isAttacking = true;
-        float ad = AttackDelayMultiplier;
-
-        if (doWeak)
-        {
-            var h = comboHits.Length > 0 ? comboHits[0] : default;
-            yield return new WaitForSeconds(h.startup * ad);
-            MarkSliceDir(HitOrigin(h.range), h.range * 0.6f, MouseSliceDir());
-            HitEnemies(HitOrigin(h.range), h.range * 0.6f, h.damage, h.knockback, FacingDir(), bleedDps, bleedDuration);
-            DoSlice(h.damage * sliceForce);
-            yield return new WaitForSeconds(h.recovery * ad);
-        }
-
-        if (doStrong)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.3f, rb.linearVelocity.y);
-            yield return new WaitForSeconds(heavyStartupDuration * ad);
-            MarkSliceDir(HitOrigin(heavyRange), heavyRange, MouseSliceDir());
-            HitEnemies(HitOrigin(heavyRange), heavyRange, heavyDamage, heavyKnockback, FacingDir(), bleedDps, bleedDuration);
-            DoSlice(heavyDamage * sliceForce);
-            yield return new WaitForSeconds(0.2f * ad);
-        }
-
-        isAttacking = false;
-    }
 
 
     static readonly WaitForSeconds s_quickdrawRecovery = new(0.15f);
+
+    void TickRender()
+    {
+        if (_illustChanger == null) return;
+        if (isAttacking)
+            _illustChanger.Attack();
+        else if (!IsGrounded())
+            _illustChanger.Jump();
+        else
+            _illustChanger.Idle();
+    }
 
     void TickCoyoteTime()
     {
@@ -1093,19 +1122,16 @@ public class PlayerControl : MonoBehaviour, IDamageable
     {
         isAttacking = true;
 
-        targetCol.TryGetComponent<IMonsterCore>(out var mm);
+        if (!targetCol.TryGetComponent<SmallEnemy>(out var small)) { isAttacking = false; yield break; }
 
-        if (mm == null) { isAttacking = false; yield break; }
-        if (mm.MonsterType != IMonsterCore.Type.small) { isAttacking = false; yield break; }
-
-        mm.StartGrab();
+        small.StartGrab();
 
         yield return new WaitForSeconds(grabThrowStartup);
 
         int dir = FacingDir();
         Vector2 throwVel = new Vector2(dir * throwForce, throwForce * 0.35f);
 
-        mm.Throw(throwVel, throwCollisionDamage, throwDuration, enemyLayer);
+        small.Throw(throwVel, throwCollisionDamage, throwDuration, enemyLayer);
 
         yield return new WaitForSeconds(0.2f);
         isAttacking = false;
@@ -1392,8 +1418,31 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void TickHpDrain()
     {
-        if (IsDead || IsInCutscene || hpDrainPerSecond <= 0f || CurrentHp <= hpDrainFloor) return;
-        CurrentHp = Mathf.Max(CurrentHp - hpDrainPerSecond * Time.deltaTime, hpDrainFloor);
+        if (IsDead || IsInCutscene || hpDrainPerSecond <= 0f) return;
+        if (GameManager.Instance != null && GameManager.Instance.State == GameManager.GameState.Boot) return;
+
+        float drain = hpDrainPerSecond * Time.deltaTime;
+
+        if (CurrentSunproofGuard > 0f)
+        {
+            CurrentSunproofGuard = Mathf.Max(CurrentSunproofGuard - drain, 0f);
+            if (CurrentSunproofGuard <= 0f)
+                _itemConsumer?.TryAutoUseSunCream();
+            return;
+        }
+
+        if (CurrentHp <= hpDrainFloor) return;
+        CurrentHp = Mathf.Max(CurrentHp - drain, hpDrainFloor);
+    }
+
+    public void AddSunproofGuard(float amount)
+    {
+        CurrentSunproofGuard = Mathf.Min(CurrentSunproofGuard + amount, maxSunproofGuard);
+    }
+
+    public void SetSunproofGuard(float amount)
+    {
+        CurrentSunproofGuard = Mathf.Clamp(amount, 0f, maxSunproofGuard);
     }
 
     // ���� BloodGage ����������������������������������������������������������������������������������������������������������������������������������
@@ -1590,24 +1639,38 @@ public class PlayerControl : MonoBehaviour, IDamageable
                 s.SetPendingSlice(sliceNormal, col.bounds.center, deathblowSliceForce, transform.position);
     }
 
-    public void SetNearLadder(bool near)
+    public void SetNearLadder(bool near, Ladder ladder)
     {
         isNearLadder = near;
+        _currentLadder = ladder;
         if (!near) ExitLadder();
     }
 
-    void EnterLadder()
+    void GrabLadder()
     {
         isOnLadder = true;
         jumpQueued = false;
         rb.gravityScale = 0f;
         rb.linearVelocity = Vector2.zero;
+        rb.position = new Vector2(_currentLadder.LadderX, rb.position.y);
+        SetLadderPassthrough(true);
     }
 
     public void ExitLadder()
     {
+        if (!isOnLadder) return;
         isOnLadder = false;
         rb.gravityScale = 1f;
+        SetLadderPassthrough(false);
+    }
+
+    void SetLadderPassthrough(bool ignore)
+    {
+        int playerLayer = gameObject.layer;
+        int mask = passthroughPlatformLayer.value;
+        for (int i = 0; i < 32; i++)
+            if ((mask & (1 << i)) != 0)
+                Physics2D.IgnoreLayerCollision(playerLayer, i, ignore);
     }
 
     public void SetInputEnabled(bool enabled)
@@ -1640,6 +1703,10 @@ public class PlayerControl : MonoBehaviour, IDamageable
         }
         _interactTarget?.Interact(gameObject);
     }
+
+    void OnUseItem1(InputAction.CallbackContext _) => _itemConsumer?.UseSlot(0);
+    void OnUseItem2(InputAction.CallbackContext _) => _itemConsumer?.UseSlot(1);
+    void OnUseItem3(InputAction.CallbackContext _) => _itemConsumer?.UseSlot(2);
 
     void TickInteraction()
     {
@@ -1700,9 +1767,6 @@ public class PlayerControl : MonoBehaviour, IDamageable
         float gizmoRange = comboHits != null && comboHits.Length > 0 ? comboHits[0].range : 1f;
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(HitOrigin(gizmoRange), gizmoRange * 0.6f);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(HitOrigin(heavyRange), heavyRange);
 
         // Slice ray — direction follows mouse at runtime; show a range circle in editor
         Vector2 origin = (Vector2)transform.position + Vector2.up * 0.3f;
