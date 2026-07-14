@@ -12,16 +12,19 @@ public class QuestEditorWindow : EditorWindow
     // ── Create form state ─────────────────────────────────────────────────────
 
     string _fileName = "NewQuest";
-    string _questId  = "";
-    string _text     = "";
+    string _questId = "";
+    string _text = "";
+    Vector2 _pinPosition = Vector2.zero;
+    int _dialogID = 0;
+    bool _repeatable = false;
 
     // ── Browser state ─────────────────────────────────────────────────────────
 
-    List<QuestData> _allQuests  = new();
-    QuestData       _selected   = null;
-    Vector2         _listScroll;
-    Vector2         _formScroll;
-    bool            _browseMode = true;
+    List<QuestData> _allQuests = new();
+    QuestData _selected = null;
+    Vector2 _listScroll;
+    Vector2 _formScroll;
+    bool _browseMode = true;
 
     // ── Colors ────────────────────────────────────────────────────────────────
 
@@ -81,7 +84,7 @@ public class QuestEditorWindow : EditorWindow
         foreach (var quest in _allQuests)
         {
             bool isSelected = quest == _selected;
-            var  rect       = EditorGUILayout.BeginVertical(GUI.skin.box);
+            var rect = EditorGUILayout.BeginVertical(GUI.skin.box);
 
             if (isSelected) EditorGUI.DrawRect(rect, SelectedColor);
 
@@ -91,7 +94,7 @@ public class QuestEditorWindow : EditorWindow
 
             if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
             {
-                _selected   = quest;
+                _selected = quest;
                 _browseMode = true;
                 Repaint();
             }
@@ -120,7 +123,7 @@ public class QuestEditorWindow : EditorWindow
         _formScroll = EditorGUILayout.BeginScrollView(_formScroll, GUILayout.ExpandWidth(true));
 
         if (_browseMode) DrawInfo();
-        else             DrawCreateForm();
+        else DrawCreateForm();
 
         EditorGUILayout.EndScrollView();
     }
@@ -136,6 +139,10 @@ public class QuestEditorWindow : EditorWindow
         EditorGUILayout.LabelField($"ID: {_selected.questId}", EditorStyles.miniLabel);
         EditorGUILayout.Space(4);
         EditorGUILayout.LabelField(_selected.text, EditorStyles.wordWrappedLabel);
+        EditorGUILayout.Space(4);
+        EditorGUILayout.LabelField($"Pin Position: {_selected.pinPosition}", EditorStyles.miniLabel);
+        EditorGUILayout.LabelField($"Dialog ID: {_selected.dialogID}", EditorStyles.miniLabel);
+        EditorGUILayout.LabelField(_selected.repeatable ? "Repeatable: yes" : "Repeatable: no (one-time)", EditorStyles.miniLabel);
         EditorGUILayout.Space(10);
 
         EditorGUILayout.BeginHorizontal();
@@ -165,9 +172,15 @@ public class QuestEditorWindow : EditorWindow
         EditorGUILayout.LabelField("New Quest", EditorStyles.boldLabel);
         _fileName = EditorGUILayout.TextField("File Name", _fileName);
         EditorGUILayout.Space(4);
-        _questId  = EditorGUILayout.TextField("Quest ID",  _questId);
+        _questId = EditorGUILayout.TextField("Quest ID", _questId);
         EditorGUILayout.LabelField("Quest Text");
-        _text     = EditorGUILayout.TextArea(_text, GUILayout.MinHeight(60));
+        _text = EditorGUILayout.TextArea(_text, GUILayout.MinHeight(60));
+        EditorGUILayout.Space(4);
+        _pinPosition = EditorGUILayout.Vector2Field("Pin Position", _pinPosition);
+        _dialogID = EditorGUILayout.IntField("Dialog ID", _dialogID);
+        _repeatable = EditorGUILayout.Toggle(
+            new GUIContent("Repeatable", "If on, the quest can be acquired again after completion. Off = once only."),
+            _repeatable);
 
         EditorGUILayout.Space(12);
         EditorGUILayout.BeginHorizontal();
@@ -188,7 +201,7 @@ public class QuestEditorWindow : EditorWindow
         _allQuests.Clear();
         foreach (var guid in AssetDatabase.FindAssets("t:QuestData"))
         {
-            var path  = AssetDatabase.GUIDToAssetPath(guid);
+            var path = AssetDatabase.GUIDToAssetPath(guid);
             var asset = AssetDatabase.LoadAssetAtPath<QuestData>(path);
             if (asset != null) _allQuests.Add(asset);
         }
@@ -204,39 +217,52 @@ public class QuestEditorWindow : EditorWindow
             return;
         }
 
-        string folder = "Assets/06.Quests";
+        string folder = "Assets/05.Quests";
         if (!AssetDatabase.IsValidFolder(folder))
-            AssetDatabase.CreateFolder("Assets", "06.Quests");
+            AssetDatabase.CreateFolder("Assets", "05.Quests");
 
         string path = $"{folder}/{_fileName}.asset";
 
-        if (File.Exists(Path.Combine(Application.dataPath, $"../{path}")))
+        // Overwrite = update the existing asset in place. Recreating it with
+        // CreateAsset destroys the loaded object mid-save (asserts) and breaks
+        // references to it (QuestManager registry, dialog quest actions).
+        QuestData existing = AssetDatabase.LoadAssetAtPath<QuestData>(path);
+        if (existing != null)
         {
             bool overwrite = EditorUtility.DisplayDialog(
                 "Quest Editor", $"'{path}' already exists. Overwrite?", "Overwrite", "Cancel");
             if (!overwrite) return;
         }
 
-        var asset = CreateInstance<QuestData>();
+        QuestData asset = existing != null ? existing : CreateInstance<QuestData>();
         asset.questId = _questId;
-        asset.text    = _text;
+        asset.text = _text;
+        asset.pinPosition = _pinPosition;
+        asset.dialogID = _dialogID;
+        asset.repeatable = _repeatable;
 
-        AssetDatabase.CreateAsset(asset, path);
+        if (existing != null)
+            EditorUtility.SetDirty(asset);
+        else
+            AssetDatabase.CreateAsset(asset, path);
         AssetDatabase.SaveAssets();
 
         EditorUtility.FocusProjectWindow();
         Selection.activeObject = asset;
-        Debug.Log($"[QuestEditor] Created '{path}'");
+        Debug.Log($"[QuestEditor] {(existing != null ? "Updated" : "Created")} '{path}'");
 
         RefreshList();
-        _selected   = asset;
+        _selected = asset;
         _browseMode = true;
     }
 
     void ResetForm()
     {
         _fileName = "NewQuest";
-        _questId  = "";
-        _text     = "";
+        _questId = "";
+        _text = "";
+        _pinPosition = Vector2.zero;
+        _dialogID = 0;
+        _repeatable = false;
     }
 }

@@ -337,6 +337,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
     bool isOnLadder;
     Ladder _currentLadder;
 
+    bool _interactEnabled = true;
+
     LineRenderer slashLine;
 
     Rigidbody2D rb;
@@ -370,7 +372,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
         bloodPuddleMaker = GetComponent<BloodPuddleMaker>();
         playerMagicSkill = GetComponent<PlayerMagicSkill>();
         _illustChanger = GetComponent<ImsiIlustChanger>();
-        _itemConsumer  = GetComponent<ItemConsumer>();
+        _itemConsumer = GetComponent<ItemConsumer>();
         if (skillwheel == null)
             skillwheel = FindFirstObjectByType<Skillwheel>();
     }
@@ -1694,6 +1696,8 @@ public class PlayerControl : MonoBehaviour, IDamageable
         SetInputEnabled(!active);
     }
 
+    public void SetInteractEnabled(bool enabled) => _interactEnabled = enabled;
+
     void OnInteract(InputAction.CallbackContext _)
     {
         if (DialogSystem.Instance != null && DialogSystem.Instance.IsOpen)
@@ -1701,6 +1705,7 @@ public class PlayerControl : MonoBehaviour, IDamageable
             DialogSystem.Instance.Advance();
             return;
         }
+        if (!_interactEnabled) return;
         _interactTarget?.Interact(gameObject);
     }
 
@@ -1710,6 +1715,12 @@ public class PlayerControl : MonoBehaviour, IDamageable
 
     void TickInteraction()
     {
+        if (!_interactEnabled)
+        {
+            _interactTarget = null;
+            if (interactPrompt != null) interactPrompt.SetActive(false);
+            return;
+        }
         Collider2D hit = Physics2D.OverlapCircle(transform.position, interactRange, interactLayer);
         _interactTarget = hit != null && hit.TryGetComponent(out IInteractable interactable) ? interactable : null;
         if (interactPrompt != null)

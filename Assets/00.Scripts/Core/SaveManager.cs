@@ -68,7 +68,9 @@ public class SaveManager : MonoBehaviour
     [Serializable]
     public class QuestSaveData
     {
+        public List<string> availableQuestIds = new();
         public List<string> activeQuestIds = new();
+        public List<int> activeQuestStages = new();   // parallel to activeQuestIds
         public List<string> completedQuestIds = new();
     }
 
@@ -367,9 +369,18 @@ public class SaveManager : MonoBehaviour
         var qm = QuestManager.Instance;
         if (qm == null) return;
 
+        Data.quests.availableQuestIds.Clear();
+        foreach (var q in qm.AvailableQuests)
+            Data.quests.availableQuestIds.Add(q.questId);
+
         Data.quests.activeQuestIds.Clear();
+        Data.quests.activeQuestStages.Clear();
         foreach (var q in qm.ActiveQuests)
+        {
             Data.quests.activeQuestIds.Add(q.questId);
+            qm.TryGetStage(q, out var stage);
+            Data.quests.activeQuestStages.Add((int)stage);
+        }
 
         Data.quests.completedQuestIds.Clear();
         foreach (var id in qm.CompletedQuestIds)
@@ -381,7 +392,7 @@ public class SaveManager : MonoBehaviour
         var qm = QuestManager.Instance;
         if (qm == null) return;
 
-        qm.LoadFromSave(Data.quests.activeQuestIds, Data.quests.completedQuestIds);
+        qm.LoadFromSave(Data.quests.availableQuestIds, Data.quests.activeQuestIds, Data.quests.completedQuestIds, Data.quests.activeQuestStages);
     }
 
     private void RecordLitBonfire(string bonfireId)

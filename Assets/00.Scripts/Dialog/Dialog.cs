@@ -2,6 +2,14 @@ using UnityEngine;
 
 public enum DialogSide { Left, Right }
 
+public enum DialogQuestAction
+{
+    None,
+    AddAvailable,   // quest shows up on the quest board
+    AddActive,      // quest is accepted immediately (stage: TalkToClient)
+    AdvanceStage    // active quest moves to its next stage; at TalkToPygmalion this completes it
+}
+
 [System.Serializable]
 public class DialogChoice
 {
@@ -42,5 +50,14 @@ public class DialogLine
 [CreateAssetMenu(fileName = "NewDialog", menuName = "Dialog/Dialog")]
 public class Dialog : ScriptableObject
 {
+    [Tooltip("Unique id for runtime lookup (e.g. QuestData.dialogID). Must be registered in DialogSystem's registry.")]
+    public int dialogId;
+
     public DialogLine[] lines;
+
+    [Header("On Dialog End")]
+    [Tooltip("What to do with the quest below when this dialog closes.")]
+    public DialogQuestAction questAction = DialogQuestAction.None;
+    [Tooltip("Quest handed to QuestManager when the dialog ends.")]
+    public QuestData quest;
 }

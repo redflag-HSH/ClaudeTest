@@ -13,6 +13,11 @@ public class DialogEditor : EditorWindow
 
     string fileName  = "NewDialog";
     string subFolder = "";           // relative to root dialog folder
+    int    dialogId  = 0;
+    Dialog duplicateIdOwner;         // existing asset already using dialogId (null = free)
+
+    DialogQuestAction questAction = DialogQuestAction.None;
+    QuestData         quest;
 
     class ChoiceData
     {
@@ -38,7 +43,7 @@ public class DialogEditor : EditorWindow
     static readonly Color ChoiceColor = new(0.12f, 0.22f, 0.12f, 0.40f);
     static readonly Color FolderColor = new(0.24f, 0.24f, 0.12f, 0.35f);
 
-    const string RootFolder = "Assets/05.Dialogs";
+    const string RootFolder = "Assets/04.Dialogs";
 
     // ── Browse state ──────────────────────────────────────────────────────────
 
@@ -102,6 +107,35 @@ public class DialogEditor : EditorWindow
     {
         EditorGUILayout.LabelField("Dialog Asset", EditorStyles.boldLabel);
         fileName = EditorGUILayout.TextField("File Name", fileName);
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUI.BeginChangeCheck();
+        dialogId = EditorGUILayout.IntField(
+            new GUIContent("Dialog ID", "Runtime lookup id (e.g. QuestData.dialogID). Must be unique."),
+            dialogId);
+        if (EditorGUI.EndChangeCheck()) duplicateIdOwner = FindDialogWithId(dialogId, fileName, subFolder);
+        if (GUILayout.Button(new GUIContent("Next Free", "Pick the lowest unused id."), GUILayout.Width(72)))
+        {
+            dialogId = NextFreeDialogId();
+            duplicateIdOwner = null;
+            GUI.FocusControl(null);
+        }
+        EditorGUILayout.EndHorizontal();
+
+        if (duplicateIdOwner != null)
+            EditorGUILayout.HelpBox($"ID {dialogId} is already used by '{duplicateIdOwner.name}'.", MessageType.Warning);
+
+        EditorGUILayout.Space(4);
+        EditorGUILayout.LabelField("On Dialog End", EditorStyles.boldLabel);
+        questAction = (DialogQuestAction)EditorGUILayout.EnumPopup(
+            new GUIContent("Quest Action", "What to do with the quest below when this dialog closes."),
+            questAction);
+        if (questAction != DialogQuestAction.None)
+        {
+            quest = (QuestData)EditorGUILayout.ObjectField("Quest", quest, typeof(QuestData), false);
+            if (quest == null)
+                EditorGUILayout.HelpBox("Assign a quest, or the action does nothing.", MessageType.Warning);
+        }
 
         EditorGUILayout.BeginHorizontal();
         subFolder = EditorGUILayout.TextField(new GUIContent("Subfolder", $"Subfolder inside {RootFolder}/"), subFolder);
@@ -314,6 +348,11 @@ public class DialogEditor : EditorWindow
         {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(selectedDialog.name, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"ID: {selectedDialog.dialogId}", EditorStyles.miniLabel, GUILayout.Width(60));
+            if (selectedDialog.questAction != DialogQuestAction.None)
+                EditorGUILayout.LabelField(
+                    $"⚑ {selectedDialog.questAction}: {(selectedDialog.quest != null ? selectedDialog.quest.questId : "(no quest!)")}",
+                    EditorStyles.miniLabel, GUILayout.Width(180));
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Select in Project", EditorStyles.miniButton))
             {
@@ -413,9 +452,43 @@ public class DialogEditor : EditorWindow
 
     // ── Logic ─────────────────────────────────────────────────────────────────
 
+    /// <summary>Returns the dialog already using <paramref name="id"/>, ignoring the asset this form would save to.</summary>
+    static Dialog FindDialogWithId(int id, string fileName, string subFolder)
+    {
+        string savePath = string.IsNullOrWhiteSpace(subFolder)
+            ? $"{RootFolder}/{fileName}.asset"
+            : $"{RootFolder}/{subFolder}/{fileName}.asset";
+
+        foreach (var guid in AssetDatabase.FindAssets("t:Dialog"))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path == savePath) continue;
+            var dialog = AssetDatabase.LoadAssetAtPath<Dialog>(path);
+            if (dialog != null && dialog.dialogId == id) return dialog;
+        }
+        return null;
+    }
+
+    static int NextFreeDialogId()
+    {
+        var used = new HashSet<int>();
+        foreach (var guid in AssetDatabase.FindAssets("t:Dialog"))
+        {
+            var dialog = AssetDatabase.LoadAssetAtPath<Dialog>(AssetDatabase.GUIDToAssetPath(guid));
+            if (dialog != null) used.Add(dialog.dialogId);
+        }
+        int id = 0;
+        while (used.Contains(id)) id++;
+        return id;
+    }
+
     void LoadIntoEditor(Dialog dialog)
     {
         fileName = dialog.name;
+        dialogId = dialog.dialogId;
+        duplicateIdOwner = null;
+        questAction = dialog.questAction;
+        quest       = dialog.quest;
 
         // Restore subfolder from asset path
         string assetPath = AssetDatabase.GetAssetPath(dialog);
@@ -462,14 +535,32 @@ public class DialogEditor : EditorWindow
 
         string path = $"{folder}/{fileName}.asset";
 
-        if (File.Exists(Path.Combine(Application.dataPath, $"../{path}")))
+        // Overwrite = update the existing asset in place. Recreating it with
+        // CreateAsset destroys the loaded object mid-save (asserts) and breaks
+        // references to it (registry entries, nextDialog links).
+        Dialog existing = AssetDatabase.LoadAssetAtPath<Dialog>(path);
+        if (existing != null)
         {
             bool overwrite = EditorUtility.DisplayDialog(
                 "Dialog Editor", $"'{path}' already exists. Overwrite?", "Overwrite", "Cancel");
             if (!overwrite) return;
         }
 
-        var asset = CreateInstance<Dialog>();
+        duplicateIdOwner = FindDialogWithId(dialogId, fileName, subFolder);
+        if (duplicateIdOwner != null)
+        {
+            bool proceed = EditorUtility.DisplayDialog(
+                "Dialog Editor",
+                $"Dialog ID {dialogId} is already used by '{duplicateIdOwner.name}'.\n" +
+                "GetDialogById will only ever find one of them.",
+                "Create Anyway", "Cancel");
+            if (!proceed) return;
+        }
+
+        Dialog asset = existing != null ? existing : CreateInstance<Dialog>();
+        asset.dialogId = dialogId;
+        asset.questAction = questAction;
+        asset.quest = questAction != DialogQuestAction.None ? quest : null;
         asset.lines = new DialogLine[lines.Count];
 
         for (int i = 0; i < lines.Count; i++)
@@ -490,19 +581,26 @@ public class DialogEditor : EditorWindow
             asset.lines[i] = dlg;
         }
 
-        AssetDatabase.CreateAsset(asset, path);
+        if (existing != null)
+            EditorUtility.SetDirty(asset);
+        else
+            AssetDatabase.CreateAsset(asset, path);
         AssetDatabase.SaveAssets();
         EditorUtility.FocusProjectWindow();
         Selection.activeObject = asset;
         browseDirty = true;
 
-        Debug.Log($"[DialogEditor] Created '{path}'");
+        Debug.Log($"[DialogEditor] {(existing != null ? "Updated" : "Created")} '{path}'");
     }
 
     void ResetForm()
     {
         fileName  = "NewDialog";
         subFolder = "";
+        dialogId  = 0;
+        duplicateIdOwner = null;
+        questAction = DialogQuestAction.None;
+        quest     = null;
         lines     = new List<LineData> { new LineData() };
     }
 
