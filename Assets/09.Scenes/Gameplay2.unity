@@ -726,6 +726,10 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7604722277517833977, guid: 0f1f8039f2740a449ad3b43951d725d2, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7718336188152344801, guid: 0f1f8039f2740a449ad3b43951d725d2, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -2463,15 +2467,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   conditionalDialogs:
+  - condition: 3
+    quest: {fileID: 11400000, guid: 725b1823cc11ffc4d8664711b5c3bd4b, type: 2}
+    stage: 0
+    dialog: {fileID: 11400000, guid: 2288d8efcf65f1644ad49ad8752dfe35, type: 2}
   - condition: 1
     quest: {fileID: 11400000, guid: 725b1823cc11ffc4d8664711b5c3bd4b, type: 2}
+    stage: 0
     dialog: {fileID: 11400000, guid: 7d1bc9dd00f110f458140a7d51bab883, type: 2}
   - condition: 0
     quest: {fileID: 11400000, guid: 725b1823cc11ffc4d8664711b5c3bd4b, type: 2}
+    stage: 0
     dialog: {fileID: 11400000, guid: 900e7adb86fce274cb78a7d366db921d, type: 2}
-  - condition: 3
-    quest: {fileID: 11400000, guid: 725b1823cc11ffc4d8664711b5c3bd4b, type: 2}
-    dialog: {fileID: 0}
   dialog: {fileID: 0}
 --- !u!61 &687339323
 BoxCollider2D:
